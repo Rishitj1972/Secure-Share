@@ -1,0 +1,39 @@
+# Node
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Vite cache
+.vite/
+
+# Environment variables
+.env
+.env.*.local
+.env.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Lock files (optional to keep or ignore based on team preference)
+# package-lock.json
+# yarn.lock
+
+# Misc
+coverage/
+.cache/
+dist-ssr/
