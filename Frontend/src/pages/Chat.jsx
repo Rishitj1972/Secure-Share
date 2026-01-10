@@ -25,6 +25,13 @@ export default function Chat(){
       setLoading(true)
       try{
         const res = await api.get('/users')
+
+        // 🔒 SAFETY CHECK (MANDATORY)
+    if (!Array.isArray(res.data)) {
+      console.error('Expected users array, got:', res.data)
+      throw new Error('Invalid users response')
+    }
+
         // exclude current user
         const list = res.data.filter(u => u._id !== user?.id)
         setUsers(list)

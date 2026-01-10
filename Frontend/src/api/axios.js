@@ -1,13 +1,23 @@
 import axios from 'axios'
 
-const baseURL = import.meta.env.VITE_API_URL || 'https://theocratic-agglomerative-marcelle.ngrok-free.dev/api/'
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+
+console.log(import.meta.env.VITE_API_URL)
+
+// const api = axios.create({
+//   baseURL,
+//   headers: { 'Content-Type': 'application/json' },
+//   // withCredentials: true, 
+// })
 
 const api = axios.create({
-  baseURL,
-  headers: { 'Content-Type': 'application/json' }
-})
+  baseURL: "https://theocratic-agglomerative-marcelle.ngrok-free.dev/api",
+  headers: {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true"
+  }
+});
 
-console.debug('API baseURL:', baseURL)
 
 // Attach token if present and log requests for debugging
 api.interceptors.request.use((config) => {

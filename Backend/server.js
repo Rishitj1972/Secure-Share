@@ -9,7 +9,13 @@ connectDB();
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || '*', exposedHeaders: ['Content-Disposition'] }));
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: false,
+}));
+
+
+
 app.use(express.json()); 
 
 app.use("/api", require("./routes/userRoutes")); // Importing user routes
