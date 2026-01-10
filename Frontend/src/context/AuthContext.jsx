@@ -15,7 +15,7 @@ export function AuthProvider({ children }){
 
   
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password })
+    const res = await api.post('/auth/login', { email, password }, {withCredentials: true})
     const accessToken = res.data?.accessToken || res.data?.token
     if(!accessToken) throw new Error('Login response did not include access token')
     localStorage.setItem('token', accessToken)
