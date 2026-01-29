@@ -11,11 +11,14 @@ export default function Login(){
 
   const submit = async (e) => {
     e.preventDefault()
+    setError('')
     try{
       await login(email, password)
       nav('/')
     }catch(err){
-      setError(err?.response?.data?.message || 'Login failed')
+      const errorMsg = err?.response?.data?.message || err?.message || 'Login failed'
+      setError(errorMsg)
+      console.error('Login error:', err)
     }
   }
 

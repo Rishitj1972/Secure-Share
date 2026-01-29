@@ -15,16 +15,24 @@ export function AuthProvider({ children }){
 
   
   const login = async (email, password) => {
-    const res = await api.post('/auth/login', { email, password }, {withCredentials: true})
-    const accessToken = res.data?.accessToken || res.data?.token
-    if(!accessToken) throw new Error('Login response did not include access token')
-    localStorage.setItem('token', accessToken)
-    // Use user data from login response
-    const currentUser = res.data?.user
-    if(!currentUser) throw new Error('Login response did not include user data')
-    localStorage.setItem('user', JSON.stringify(currentUser))
-    setUser(currentUser)
-    return currentUser
+    try {
+      const res = await api.post('/auth/login', { email, password }, {withCredentials: true})
+      const accessToken = res.data?.accessToken || res.data?.token
+      if(!accessToken) throw new Error('Invalid login response: no access token')
+      
+      localStorage.setItem('token', accessToken)
+      
+      // Use user data from login response
+      const currentUser = res.data?.user
+      if(!currentUser) throw new Error('Invalid login response: no user data')
+      
+      localStorage.setItem('user', JSON.stringify(currentUser))
+      setUser(currentUser)
+      return currentUser
+    } catch (error) {
+      console.error('Login error:', error)
+      throw error
+    }
   }
 
   const register = async (data) => {
