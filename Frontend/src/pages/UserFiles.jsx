@@ -127,6 +127,3 @@ export default function UserFiles(){
     </div>
   )
 }
-    </div>
-  )
-}
