@@ -1,10 +1,11 @@
-import React from 'react'
-import { Routes, Route, Link, Navigate } from 'react-router-dom'
+import React, { useEffect } from 'react'
+import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Chat from './pages/Chat'
 import UserFiles from './pages/UserFiles'
+import NotFound from './pages/NotFound'
 
 function PrivateRoute({ children }){
   const { user } = useAuth()
@@ -13,6 +14,15 @@ function PrivateRoute({ children }){
 
 export default function App(){
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  // Redirect to login when user becomes null (logout triggered)
+  useEffect(() => {
+    if (!user && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+      navigate('/login', { replace: true })
+    }
+  }, [user, navigate])
+
   return (
     <div className="app">
       <nav className="nav flex items-center justify-between">
@@ -36,7 +46,9 @@ export default function App(){
         <Route path="/users/:id" element={<PrivateRoute><UserFiles /></PrivateRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
   )
 }
+

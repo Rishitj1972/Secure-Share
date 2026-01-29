@@ -25,9 +25,12 @@ api.interceptors.response.use(
   response => response,
   error => {
     if (error?.response?.status === 401) {
+      // Signal logout by setting a flag in localStorage
+      localStorage.setItem('logout_triggered', 'true')
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      // Trigger storage event for other tabs/windows
+      window.dispatchEvent(new Event('logout'))
     }
     return Promise.reject(error)
   }
