@@ -79,7 +79,6 @@ export default function UserFiles(){
       a.remove()
       window.URL.revokeObjectURL(url)
     }catch(err){
-      console.error(err)
       setMsg(err?.response?.data?.message || 'Download failed')
       if (err?.response?.status === 401){
         logout()
@@ -115,7 +114,6 @@ export default function UserFiles(){
                 setFiles(prev => prev.filter(x => x._id !== id))
                 setMsg('File deleted')
               }catch(err){
-                console.error(err)
                 setMsg(err?.response?.data?.message || 'Delete failed')
               }
             }}

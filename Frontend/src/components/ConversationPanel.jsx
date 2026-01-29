@@ -94,7 +94,6 @@ export default function ConversationPanel({ userId, userObj, showNotification })
               setFiles(prev => prev.filter(x => x._id !== id))
               showNotification && showNotification('File deleted', 'success')
             }catch(err){
-              console.error(err)
               showNotification && showNotification(err?.response?.data?.message || 'Delete failed', 'error')
             }
           }} />

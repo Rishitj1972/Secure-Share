@@ -7,27 +7,43 @@ export default function Users(){
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [users, setUsers] = useState([])
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(()=>{
+    if (!user?.id) return // Don't fetch if user is not logged in
+    
     const load = async () => {
+      setLoading(true)
+      setError(null)
       try{
         const res = await api.get('/users')
+        
+        if (!Array.isArray(res.data)) {
+          throw new Error('Invalid response format')
+        }
         const list = res.data.filter(u => u._id !== user?.id)
         setUsers(list)
       }catch(err){
         if (err?.response?.status === 401) {
           logout()
           navigate('/login')
+        } else {
+          setError(err?.response?.data?.message || 'Failed to load users')
         }
+      }finally{
+        setLoading(false)
       }
     }
     load()
-  },[user, logout, navigate])
+  },[user?.id, logout, navigate])
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">All Users</h2>
-      <div className="grid gap-3">
+      {error && <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">{error}</div>}
+      {loading && <div className="text-center text-gray-500">Loading users...</div>}
+      {!loading && <div className="grid gap-3">
         {users.map(u => (
           <Link to={`/users/${u._id}`} key={u._id} className="p-3 border rounded hover:bg-gray-50 flex items-center justify-between">
             <div>
@@ -37,8 +53,8 @@ export default function Users(){
             <div className="text-sm text-sky-600">Open</div>
           </Link>
         ))}
-        {users.length === 0 && <div>No other users found.</div>}
-      </div>
+        {users.length === 0 && !error && <div>No other users found.</div>}
+      </div>}
     </div>
   )
 }

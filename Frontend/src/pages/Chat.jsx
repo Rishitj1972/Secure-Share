@@ -21,25 +21,34 @@ export default function Chat(){
   const [note, setNote] = useState(null)
 
   useEffect(()=>{
+    if (!user?.id) return // Don't fetch if user is not logged in
+    
     const load = async () =>{
       setLoading(true)
       try{
         const res = await api.get('/users')
 
         if (!Array.isArray(res.data)) {
-          throw new Error('Invalid users response')
+          throw new Error('Server returned invalid users data')
         }
 
         const list = res.data.filter(u => u._id !== user?.id)
         setUsers(list)
+        setNote(null) // Clear any previous errors
       }catch(err){
-        setNote({ text: err?.response?.data?.message || 'Failed to load users', type: 'error' })
+        if (err.response?.status === 401) {
+          setNote({ text: 'Session expired. Please login again.', type: 'error' })
+        } else if (err.response?.status === 500) {
+          setNote({ text: 'Server error. Please try again later.', type: 'error' })
+        } else {
+          setNote({ text: err?.response?.data?.message || 'Failed to load users', type: 'error' })
+        }
       }finally{
         setLoading(false)
       }
     }
     load()
-  },[user])
+  },[user?.id])
 
   const showNotification = (text, type='success') => {
     setNote({ text, type })

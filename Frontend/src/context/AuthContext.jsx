@@ -30,7 +30,6 @@ export function AuthProvider({ children }){
       setUser(currentUser)
       return currentUser
     } catch (error) {
-      console.error('Login error:', error)
       throw error
     }
   }

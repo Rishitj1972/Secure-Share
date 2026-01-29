@@ -18,7 +18,6 @@ export default function Login(){
     }catch(err){
       const errorMsg = err?.response?.data?.message || err?.message || 'Login failed'
       setError(errorMsg)
-      console.error('Login error:', err)
     }
   }
 
