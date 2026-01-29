@@ -39,10 +39,18 @@ export function AuthProvider({ children }){
     return res.data
   }
 
-  const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
+  const logout = async () => {
+    try {
+      // Call logout endpoint to invalidate token on server
+      await api.post('/auth/logout')
+    } catch (error) {
+      // Even if logout fails, clear local storage
+      console.error('Logout error:', error)
+    } finally {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
+    }
   }
 
   const value = { user, login, register, logout }

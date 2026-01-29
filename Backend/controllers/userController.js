@@ -66,6 +66,14 @@ const loginUser = asyncHandler( async (req,res) => {
         {expiresIn: "15m"}
         );
         
+        // Store the current token in database and set expiration
+        const tokenExpiresAt = new Date();
+        tokenExpiresAt.setMinutes(tokenExpiresAt.getMinutes() + 15);
+        
+        user.currentToken = accessToken;
+        user.tokenExpiresAt = tokenExpiresAt;
+        await user.save();
+        
         res.status(200).json({
             accessToken,
             user: {
@@ -94,4 +102,18 @@ const fetchUsers = asyncHandler( async (req, res) => {
     res.status(200).json(users);
 });
 
-module.exports = { registerUser, loginUser, currentUser, fetchUsers };
+// @desc Logout user
+// @route POST /api/users/logout
+// @access Private
+
+const logoutUser = asyncHandler( async (req, res) => {
+    const user = await User.findById(req.user.id);
+    if (user) {
+        user.currentToken = null;
+        user.tokenExpiresAt = null;
+        await user.save();
+    }
+    res.status(200).json({ message: 'Logged out successfully' });
+});
+
+module.exports = { registerUser, loginUser, currentUser, fetchUsers, logoutUser };
