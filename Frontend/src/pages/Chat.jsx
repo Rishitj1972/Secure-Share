@@ -26,17 +26,13 @@ export default function Chat(){
       try{
         const res = await api.get('/users')
 
-        // 🔒 SAFETY CHECK (MANDATORY)
-    if (!Array.isArray(res.data)) {
-      console.error('Expected users array, got:', res.data)
-      throw new Error('Invalid users response')
-    }
+        if (!Array.isArray(res.data)) {
+          throw new Error('Invalid users response')
+        }
 
-        // exclude current user
         const list = res.data.filter(u => u._id !== user?.id)
         setUsers(list)
       }catch(err){
-        console.error(err)
         setNote({ text: err?.response?.data?.message || 'Failed to load users', type: 'error' })
       }finally{
         setLoading(false)

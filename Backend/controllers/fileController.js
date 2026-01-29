@@ -43,6 +43,11 @@ const sendFile = asyncHandler(async (req, res) => {
     mimeType: req.file.mimetype,
   });
 
+  // Populate sender info for the notification
+  await saved.populate('sender', 'username email');
+
+  // Real-time notifications removed; respond with saved metadata only
+
   // Return minimal safe metadata
   res.status(201).json({
     _id: saved._id,
@@ -144,8 +149,6 @@ const deleteFile = asyncHandler(async (req, res) => {
     throw new Error('File not found');
   }
 
-  console.log(`Delete attempt: file ${fileId}, sender=${file.sender}, receiver=${file.receiver}, requester=${userId}`);
-
   // Only sender or receiver can delete
   if (file.receiver.toString() !== userId.toString() && file.sender.toString() !== userId.toString()) {
     res.status(403);
@@ -156,11 +159,9 @@ const deleteFile = asyncHandler(async (req, res) => {
   try {
     if (fs.existsSync(absPath)) {
       fs.unlinkSync(absPath);
-      console.log(`Removed file from disk: ${absPath}`);
     }
   } catch (err) {
-    // Non-fatal: log and continue to remove db record
-    console.warn('Failed to remove file from disk', err);
+    // Non-fatal: continue to remove db record
   }
 
   const removed = await File.findByIdAndDelete(fileId);
@@ -169,8 +170,6 @@ const deleteFile = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('File not found during deletion');
   }
-
-  console.log(`User ${userId} deleted file ${fileId}`);
 
   // Return a consistent JSON response to make it easier for the client to handle
   res.status(200).json({ message: 'File deleted' });

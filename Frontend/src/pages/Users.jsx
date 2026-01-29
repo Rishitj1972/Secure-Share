@@ -12,11 +12,9 @@ export default function Users(){
     const load = async () => {
       try{
         const res = await api.get('/users')
-        // exclude current logged-in user
         const list = res.data.filter(u => u._id !== user?.id)
         setUsers(list)
       }catch(err){
-        console.error(err)
         if (err?.response?.status === 401) {
           logout()
           navigate('/login')

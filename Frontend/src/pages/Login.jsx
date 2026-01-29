@@ -15,7 +15,6 @@ export default function Login(){
       await login(email, password)
       nav('/')
     }catch(err){
-      console.error('Login error', err)
       setError(err?.response?.data?.message || 'Login failed')
     }
   }

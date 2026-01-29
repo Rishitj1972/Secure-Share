@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import FileCard from '../components/FileCard'
@@ -14,7 +14,8 @@ export default function UserFiles(){
   const [downloading, setDownloading] = useState(null)
   const [otherUser, setOtherUser] = useState(null)
 
-  const load = async () => {
+  // Memoize load function so it can be safely used in dependency arrays
+  const load = useCallback(async () => {
     try{
       const [filesRes, usersRes] = await Promise.all([
         api.get(`/files/with/${id}`),
@@ -24,18 +25,24 @@ export default function UserFiles(){
       const other = usersRes.data.find(u => u._id === id)
       setOtherUser(other)
     }catch(err){
-      console.error(err)
       if (err?.response?.status === 401){
         logout()
         navigate('/login')
       }
     }
-  }
+  }, [id, logout, navigate])
 
+  // Load files when component mounts or id changes
   useEffect(()=>{
     load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[id])
+  },[id, load])
+
+  // Removed all real-time and polling reloads per request
+
+
+
+
+  // Removed all real-time and polling reloads per request
 
   const submit = async (e) => {
     e.preventDefault()
@@ -117,6 +124,9 @@ export default function UserFiles(){
         ))}
         {files.length === 0 && <div>No files exchanged yet.</div>}
       </div>
+    </div>
+  )
+}
     </div>
   )
 }

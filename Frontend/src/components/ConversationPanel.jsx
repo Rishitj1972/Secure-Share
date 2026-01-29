@@ -20,7 +20,6 @@ export default function ConversationPanel({ userId, userObj, showNotification })
         if(!mounted.current) return
         setFiles(res.data)
       }catch(err){
-        console.error(err)
         showNotification && showNotification(err?.response?.data?.message || 'Failed to load files', 'error')
       }finally{
         setLoading(false)
@@ -50,11 +49,9 @@ export default function ConversationPanel({ userId, userObj, showNotification })
       showNotification && showNotification('File sent', 'success')
       setFileInput(null)
       setUploadProgress(0)
-      // refresh conversation
       const r = await api.get(`/files/with/${userId}`)
       setFiles(r.data)
     }catch(err){
-      console.error(err)
       const errorMsg = err?.response?.data?.message || 'Upload failed'
       setMsg(errorMsg)
       showNotification && showNotification(errorMsg, 'error')
@@ -75,7 +72,6 @@ export default function ConversationPanel({ userId, userObj, showNotification })
       window.URL.revokeObjectURL(url)
       showNotification && showNotification('Download started', 'success')
     }catch(err){
-      console.error(err)
       const errorMsg = err?.response?.data?.message || 'Download failed'
       showNotification && showNotification(errorMsg, 'error')
     }
