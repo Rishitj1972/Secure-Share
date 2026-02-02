@@ -63,12 +63,12 @@ const loginUser = asyncHandler( async (req,res) => {
                 id: user.id
             },
         }, process.env.ACCESS_TOKEN_SECRET,
-        {expiresIn: "15m"}
+        {expiresIn: "1h"}
         );
         
         // Store the current token in database and set expiration
         const tokenExpiresAt = new Date();
-        tokenExpiresAt.setMinutes(tokenExpiresAt.getMinutes() + 15);
+        tokenExpiresAt.setHours(tokenExpiresAt.getHours() + 1);
         
         user.currentToken = accessToken;
         user.tokenExpiresAt = tokenExpiresAt;

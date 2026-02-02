@@ -6,7 +6,10 @@ const api = axios.create({
   baseURL,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  timeout: 300000, // 5 minutes timeout for large file uploads
+  maxContentLength: Infinity,
+  maxBodyLength: Infinity
 });
 
 // Add headers to every request including ngrok warning bypass
@@ -17,7 +20,6 @@ api.interceptors.request.use((config) => {
   }
   // Ensure ngrok warning header is always sent
   config.headers['ngrok-skip-browser-warning'] = 'true'
-  config.headers['user-agent'] = 'secureShare-frontend'
   return config
 })
 

@@ -4,13 +4,20 @@ const User = require("../models/userModels");
 
 const validateToken = expressAsyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization || req.headers.Authorization;
+  const tokenFromQuery = req.query && req.query.token;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  let token = null;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (tokenFromQuery && req.method === 'GET' && req.path.startsWith('/download/')) {
+    token = tokenFromQuery;
+  }
+
+  if (!token) {
     res.status(401);
     throw new Error('User is not authorized or token is missing');
   }
-
-  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);

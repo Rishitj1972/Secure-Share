@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import api from '../api/axios'
 import FileCard from './FileCard'
+import { useChunkedUpload } from '../hooks/useChunkedUpload'
 
 export default function ConversationPanel({ userId, userObj, showNotification }){
   const [files, setFiles] = useState([])
@@ -8,7 +9,9 @@ export default function ConversationPanel({ userId, userObj, showNotification })
   const [uploadProgress, setUploadProgress] = useState(0)
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
+  const [isUploading, setIsUploading] = useState(false)
   const mounted = useRef(true)
+  const { uploadFile } = useChunkedUpload()
 
   useEffect(()=>{
     mounted.current = true
@@ -33,47 +36,66 @@ export default function ConversationPanel({ userId, userObj, showNotification })
   const submit = async (e) => {
     e && e.preventDefault && e.preventDefault()
     if(!fileInput) return setMsg('Please select a file')
-    const fd = new FormData()
-    fd.append('file', fileInput)
-    fd.append('receiver', userId)
+    if(!userId) return setMsg('Please select a user')
+    if(isUploading) return setMsg('Upload already in progress')
+    
+    setIsUploading(true)
     setUploadProgress(0)
+    setMsg('')
+    
     try{
-      const res = await api.post('/files/send', fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
-          setUploadProgress(percent)
-        }
+      // Pass progress callback to update progress bar in real-time
+      const result = await uploadFile(fileInput, userId, (progress) => {
+        setUploadProgress(progress)
       })
-      setMsg('File sent')
+      
+      setMsg('File sent successfully!')
       showNotification && showNotification('File sent', 'success')
       setFileInput(null)
-      setUploadProgress(0)
+      
+      // Refresh file list
       const r = await api.get(`/files/with/${userId}`)
       setFiles(r.data)
+      
+      // Reset progress bar after a short delay
+      setTimeout(() => {
+        setUploadProgress(0)
+        setMsg('')
+      }, 2000)
     }catch(err){
-      const errorMsg = err?.response?.data?.message || 'Upload failed'
+      const errorMsg = err?.response?.data?.message || err?.message || 'Upload failed'
       setMsg(errorMsg)
       showNotification && showNotification(errorMsg, 'error')
+    }finally{
+      setIsUploading(false)
     }
   }
 
   const onDownload = async (fileId, fileMeta) => {
     try{
-      const res = await api.get(`/files/download/${fileId}`, { responseType: 'arraybuffer' })
-      const blob = new Blob([res.data], { type: fileMeta?.mimeType || 'application/octet-stream' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = fileMeta?.originalFileName || 'file'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
+      showNotification && showNotification('Starting download...', 'info')
+
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+
+      const downloadUrl = `${api.defaults.baseURL}/files/download/${fileId}?token=${encodeURIComponent(token)}`
+
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = fileMeta?.originalFileName || 'file'
+      link.style.display = 'none'
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
       showNotification && showNotification('Download started', 'success')
     }catch(err){
-      const errorMsg = err?.response?.data?.message || 'Download failed'
+      const errorMsg = err?.message || 'Download failed'
       showNotification && showNotification(errorMsg, 'error')
+      console.error('Download error:', err)
     }
   }
 
@@ -103,21 +125,50 @@ export default function ConversationPanel({ userId, userObj, showNotification })
 
       <div className="mt-2 border-t pt-2 sticky bottom-0 bg-white z-10 shadow-md">
         <form className="flex items-center gap-2 py-2" onSubmit={submit}>
-          <label className="inline-flex items-center gap-2 px-3 py-2 bg-white border rounded cursor-pointer">
-            <input type="file" className="hidden" onChange={e=>setFileInput(e.target.files[0])} />
+          <label className="inline-flex items-center gap-2 px-3 py-2 bg-white border rounded cursor-pointer hover:bg-gray-50">
+            <input type="file" className="hidden" onChange={e=>setFileInput(e.target.files[0])} disabled={isUploading} />
             <span>📎 Attach</span>
           </label>
           <div className="flex-1">
-            <div className="text-sm">{fileInput ? fileInput.name : 'No file selected'}</div>
+            <div className="flex justify-between items-center">
+              <div className="text-sm flex-1">{fileInput ? fileInput.name : 'No file selected'}</div>
+              {uploadProgress > 0 && <div className="text-sm font-medium text-sky-600 ml-2">{uploadProgress}%</div>}
+            </div>
             {uploadProgress > 0 && (
-              <div className="w-full bg-gray-200 h-2 rounded mt-1">
-                <div style={{width: `${uploadProgress}%`}} className="h-2 bg-sky-500" />
+              <div className="w-full bg-gray-200 h-2.5 rounded-full mt-1.5 overflow-hidden">
+                <div 
+                  style={{width: `${uploadProgress}%`}} 
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    uploadProgress === 100 ? 'bg-green-500' : 'bg-sky-500'
+                  }`}
+                />
               </div>
             )}
+            {uploadProgress === 100 && isUploading && (
+              <div className="text-xs text-gray-500 mt-1">Finalizing upload...</div>
+            )}
           </div>
-          <button className="btn" type="submit">Send</button>
+          <button 
+            className={`px-4 py-2 rounded font-medium transition-colors ${
+              isUploading 
+                ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
+                : 'bg-sky-500 text-white hover:bg-sky-600'
+            }`}
+            type="submit" 
+            disabled={isUploading}
+          >
+            {isUploading ? `Uploading... ${uploadProgress}%` : 'Send'}
+          </button>
         </form>
-        {msg && <div className="mt-2 text-sm text-gray-600">{msg}</div>}
+        {msg && (
+          <div className={`mt-2 text-sm px-2 py-1 rounded ${
+            msg.includes('failed') || msg.includes('error') 
+              ? 'text-red-600 bg-red-50' 
+              : 'text-green-600 bg-green-50'
+          }`}>
+            {msg}
+          </div>
+        )}
       </div>
     </div>
   )

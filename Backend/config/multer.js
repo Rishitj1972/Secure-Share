@@ -18,8 +18,24 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB default
-  // fileFilter can be added here if desired
+  limits: { 
+    fileSize: 60 * 1024 * 1024, // 60MB per chunk (supports dynamic up to 50MB + overhead)
+    files: 1,
+    fieldSize: 10 * 1024 * 1024 // 10MB for form fields
+  },
+  fileFilter: (req, file, cb) => {
+    // Only accept allowed file types (optional security layer)
+    // For now, allow all - can be restricted if needed
+    if (file && file.originalname) {
+      // Prevent path traversal attacks
+      const filename = file.originalname.replace(/\.\./g, '').replace(/[/\\]/g, '');
+      if (filename !== file.originalname) {
+        return cb(new Error('Invalid filename'));
+      }
+    }
+    cb(null, true);
+  }
 });
 
 module.exports = upload;
+
