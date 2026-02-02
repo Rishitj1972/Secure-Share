@@ -27,9 +27,9 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
     throw new Error('Missing required fields: filename, fileSize, receiver, mimeType');
   }
 
-  if (fileSize > 2 * 1024 * 1024 * 1024) { // 2GB limit
+  if (fileSize > 4 * 1024 * 1024 * 1024) { // 4GB limit
     res.status(400);
-    throw new Error('File size exceeds maximum limit of 2GB');
+    throw new Error('File size exceeds maximum limit of 4GB');
   }
 
   if (receiver === senderId) {
