@@ -7,11 +7,14 @@ export default function ConversationPanel({ userId, userObj, showNotification })
   const [files, setFiles] = useState([])
   const [fileInput, setFileInput] = useState(null)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadSpeed, setUploadSpeed] = useState(0)
+  const [elapsedTime, setElapsedTime] = useState(0)
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
   const [isUploading, setIsUploading] = useState(false)
+  const [currentUploadId, setCurrentUploadId] = useState(null)
   const mounted = useRef(true)
-  const { uploadFile } = useChunkedUpload()
+  const { uploadFile, cancelUpload } = useChunkedUpload()
 
   useEffect(()=>{
     mounted.current = true
@@ -41,13 +44,38 @@ export default function ConversationPanel({ userId, userObj, showNotification })
     
     setIsUploading(true)
     setUploadProgress(0)
+    setUploadSpeed(0)
+    setElapsedTime(0)
+    setCurrentUploadId(null)
     setMsg('')
+    const startTime = Date.now()
+    let lastUpdateTime = startTime
     
     try{
       // Pass progress callback to update progress bar in real-time
-      const result = await uploadFile(fileInput, userId, (progress) => {
-        setUploadProgress(progress)
-      })
+      const result = await uploadFile(
+        fileInput,
+        userId,
+        (progress) => {
+          const safeProgress = Math.max(0, Math.min(100, Math.round(progress)))
+          setUploadProgress(prev => Math.max(prev, safeProgress))
+          
+          const now = Date.now()
+          const elapsed = (now - startTime) / 1000
+          setElapsedTime(Math.round(elapsed))
+
+          // Update speed every 500ms to avoid too frequent updates
+          if (elapsed > 0.5 && (now - lastUpdateTime) >= 500) {
+            const bytesUploaded = (safeProgress / 100) * fileInput.size
+            const speed = bytesUploaded / elapsed
+            setUploadSpeed(speed)
+            lastUpdateTime = now
+          }
+        },
+        (uploadId) => {
+          setCurrentUploadId(uploadId)
+        }
+      )
       
       setMsg('File sent successfully!')
       showNotification && showNotification('File sent', 'success')
@@ -60,6 +88,8 @@ export default function ConversationPanel({ userId, userObj, showNotification })
       // Reset progress bar after a short delay
       setTimeout(() => {
         setUploadProgress(0)
+        setUploadSpeed(0)
+        setElapsedTime(0)
         setMsg('')
       }, 2000)
     }catch(err){
@@ -68,6 +98,31 @@ export default function ConversationPanel({ userId, userObj, showNotification })
       showNotification && showNotification(errorMsg, 'error')
     }finally{
       setIsUploading(false)
+      setCurrentUploadId(null)
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!currentUploadId) return
+    
+    // Immediately update UI state
+    setIsUploading(false)
+    setUploadProgress(0)
+    setUploadSpeed(0)
+    setElapsedTime(0)
+    const uploadIdToCancel = currentUploadId
+    setCurrentUploadId(null)
+    setFileInput(null)
+    
+    try {
+      // Cancel upload and cleanup chunks on server
+      await cancelUpload(uploadIdToCancel)
+      setMsg('Upload cancelled - chunks cleared')
+      setTimeout(() => setMsg(''), 3000)
+    } catch (err) {
+      // Even if server cancel fails, UI is already reset
+      setMsg('Upload cancelled (local)')
+      setTimeout(() => setMsg(''), 3000)
     }
   }
 
@@ -102,8 +157,13 @@ export default function ConversationPanel({ userId, userObj, showNotification })
   return (
     <div className="h-full p-3 flex flex-col">
       <div className="border-b pb-2 mb-2">
-        <div className="font-semibold">{userObj ? `${userObj.name || userObj.username}` : 'Select a user'}</div>
-        <div className="text-xs text-gray-500">Share files securely</div>
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="font-semibold">{userObj ? `${userObj.name || userObj.username}` : 'Select a user'}</div>
+            <div className="text-xs text-gray-500">Share files securely</div>
+          </div>
+          <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-mono">v2.7.0</div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-auto space-y-3 mb-3">
@@ -144,21 +204,38 @@ export default function ConversationPanel({ userId, userObj, showNotification })
                 />
               </div>
             )}
+            {uploadProgress > 0 && (
+              <div className="flex justify-between text-xs text-gray-600 mt-1">
+                <span>⚡ {uploadSpeed > 0 ? `${(uploadSpeed / (1024 * 1024)).toFixed(1)} MB/s` : 'Starting...'}</span>
+                <span>⏱ {elapsedTime}s</span>
+              </div>
+            )}
             {uploadProgress === 100 && isUploading && (
               <div className="text-xs text-gray-500 mt-1">Finalizing upload...</div>
             )}
           </div>
-          <button 
-            className={`px-4 py-2 rounded font-medium transition-colors ${
-              isUploading 
-                ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                : 'bg-sky-500 text-white hover:bg-sky-600'
-            }`}
-            type="submit" 
-            disabled={isUploading}
-          >
-            {isUploading ? `Uploading... ${uploadProgress}%` : 'Send'}
-          </button>
+          <div className="flex gap-2">
+            <button 
+              className={`px-4 py-2 rounded font-medium transition-colors ${
+                isUploading 
+                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
+                  : 'bg-sky-500 text-white hover:bg-sky-600'
+              }`}
+              type="submit" 
+              disabled={isUploading}
+            >
+              {isUploading ? `Uploading... ${uploadProgress}%` : 'Send'}
+            </button>
+            {isUploading && currentUploadId && (
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-4 py-2 rounded font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </form>
         {msg && (
           <div className={`mt-2 text-sm px-2 py-1 rounded ${

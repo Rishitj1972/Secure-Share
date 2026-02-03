@@ -16,6 +16,7 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'https://secure-share-frontend-demo-spc5.vercel.app',
+  // Cloudflare tunnel origins will be allowed by the ngrok regex pattern below
 ];
 
 app.use(cors({

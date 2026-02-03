@@ -7,7 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  timeout: 300000, // 5 minutes timeout for large file uploads
+  timeout: 900000, // 15 minutes timeout for large file uploads
   maxContentLength: Infinity,
   maxBodyLength: Infinity
 });
@@ -20,6 +20,12 @@ api.interceptors.request.use((config) => {
   }
   // Ensure ngrok warning header is always sent
   config.headers['ngrok-skip-browser-warning'] = 'true'
+  
+  // Set longer timeout for chunk uploads (30 minutes)
+  if (config.url && config.url.includes('chunked')) {
+    config.timeout = 1800000 // 30 minutes for chunked uploads
+  }
+  
   return config
 })
 

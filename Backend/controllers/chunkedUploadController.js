@@ -151,16 +151,16 @@ const uploadChunk = asyncHandler(async (req, res) => {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
     
-    // Move chunk from temp location to chunks folder
+    // Move chunk from temp location to chunks folder (atomic operation)
     fs.renameSync(req.file.path, chunkPath);
   } catch (err) {
     // Clean up temp file on move error
-    try {
-      if (req.file && fs.existsSync(req.file.path)) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
         fs.unlinkSync(req.file.path);
+      } catch (cleanupErr) {
+        // Ignore cleanup errors
       }
-    } catch (cleanupErr) {
-      console.error('Error cleaning up temp file:', cleanupErr);
     }
     res.status(500);
     throw new Error(`Failed to save chunk: ${err.message}`);
@@ -259,26 +259,29 @@ const completeChunkedUpload = asyncHandler(async (req, res) => {
     
     writeStream.on('error', (err) => {
       streamError = err;
-      console.error('Write stream error during assembly:', err);
     });
 
     for (let i = 1; i <= uploadSession.totalChunks; i++) {
       const chunkPath = path.join(uploadPath, `chunk_${i}`);
 
-      if (!fs.existsSync(chunkPath)) {
-        writeStream.destroy();
-        if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
-        res.status(400);
-        throw new Error(`Missing chunk ${i} during assembly`);
-      }
-
+      // Check for errors before processing next chunk
       if (streamError) {
         writeStream.destroy();
         if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
         throw streamError;
       }
 
-      const stat = fs.statSync(chunkPath);
+      // Verify chunk exists
+      let stat;
+      try {
+        stat = fs.statSync(chunkPath);
+      } catch (statErr) {
+        writeStream.destroy();
+        if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
+        res.status(400);
+        throw new Error(`Missing chunk ${i} during assembly`);
+      }
+
       bytesWritten += stat.size;
 
       const readStream = fs.createReadStream(chunkPath, { highWaterMark: 256 * 1024 });
@@ -361,12 +364,12 @@ const completeChunkedUpload = asyncHandler(async (req, res) => {
 
   } catch (error) {
     // Clean up temp file on error
-    try {
-      if (req.file && fs.existsSync(req.file.path)) {
+    if (req.file && fs.existsSync(req.file.path)) {
+      try {
         fs.unlinkSync(req.file.path);
+      } catch (cleanupErr) {
+        // Ignore cleanup errors
       }
-    } catch (cleanupErr) {
-      console.error('Error cleaning up temp file after error:', cleanupErr);
     }
     
     // Mark session as failed

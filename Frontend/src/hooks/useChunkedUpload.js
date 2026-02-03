@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import api from '../api/axios'
 import CryptoJS from 'crypto-js'
 
 export function useChunkedUpload() {
   const [uploads, setUploads] = useState({}) // uploadId -> upload state
+  const abortControllers = useRef({}) // uploadId -> AbortController
 
   const sleep = useCallback((ms) => new Promise((resolve) => setTimeout(resolve, ms)), [])
 
@@ -47,7 +48,7 @@ export function useChunkedUpload() {
   }, [])
 
   const uploadChunk = useCallback(async (uploadId, chunkNumber, chunkData, totalChunks, onChunkProgress) => {
-    const maxRetries = 2
+    const maxRetries = 3
     let lastError = null
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -76,7 +77,8 @@ export function useChunkedUpload() {
 
         const res = await api.post('/files/chunked/upload-chunk', formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
-          timeout: 0,
+          timeout: 1800000, // 30 minutes timeout for each chunk
+          signal: abortControllers.current[uploadId]?.signal,
           onUploadProgress: (event) => {
             if (!onChunkProgress || !event.total) return
             const percent = Math.min(100, Math.round((event.loaded / event.total) * 100))
@@ -99,10 +101,22 @@ export function useChunkedUpload() {
         return res.data
       } catch (error) {
         lastError = error
-        if (attempt < maxRetries) {
-          await sleep(500 * Math.pow(2, attempt))
+        
+        // Check if upload was cancelled
+        if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+          throw error // Don't retry if cancelled
+        }
+        
+        const isTimeout = error.message.includes('timeout') || 
+                         error.message.includes('context canceled') ||
+                         error.code === 'ECONNABORTED'
+        
+        if (attempt < maxRetries && isTimeout) {
+          const waitTime = 1000 * Math.pow(2, attempt) // Exponential backoff: 1s, 2s, 4s
+          await sleep(waitTime)
           continue
         }
+        
         setUploads(prev => ({
           ...prev,
           [uploadId]: {
@@ -117,29 +131,60 @@ export function useChunkedUpload() {
     throw lastError
   }, [calculateChunkHash, sleep])
 
-  const uploadFile = useCallback(async (file, receiverId, onProgress) => {
+  const uploadFile = useCallback(async (file, receiverId, onProgress, onUploadIdReady) => {
     const fileSizeInMB = file.size / (1024 * 1024);
 
     const pickSettings = (level) => {
       if (level === 0) {
-        if (fileSizeInMB < 50) return { chunkSize: 5 * 1024 * 1024, parallel: 2 };
-        if (fileSizeInMB < 200) return { chunkSize: 10 * 1024 * 1024, parallel: 3 };
-        if (fileSizeInMB < 500) return { chunkSize: 25 * 1024 * 1024, parallel: 3 };
-        return { chunkSize: 32 * 1024 * 1024, parallel: 3 };
+        // Reduced chunk sizes for stable uploads through slow networks (Cloudflare tunnel)
+        if (fileSizeInMB < 50) return { chunkSize: 2 * 1024 * 1024, parallel: 2 }; // 2MB chunks
+        if (fileSizeInMB < 200) return { chunkSize: 5 * 1024 * 1024, parallel: 2 }; // 5MB chunks
+        if (fileSizeInMB < 500) return { chunkSize: 10 * 1024 * 1024, parallel: 2 }; // 10MB chunks
+        return { chunkSize: 15 * 1024 * 1024, parallel: 2 }; // 15MB chunks for large files
       }
       if (level === 1) {
-        return { chunkSize: 10 * 1024 * 1024, parallel: 2 };
+        return { chunkSize: 5 * 1024 * 1024, parallel: 1 }; // 5MB, single parallel
       }
-      return { chunkSize: 5 * 1024 * 1024, parallel: 2 };
+      return { chunkSize: 2 * 1024 * 1024, parallel: 1 }; // 2MB, single parallel
     };
 
     const runUpload = async ({ chunkSize: preferredChunkSize, parallel }) => {
       const { uploadId, chunkSize, totalChunks } = await initUpload(file, receiverId, preferredChunkSize)
 
+      // Create AbortController for this upload
+      abortControllers.current[uploadId] = new AbortController()
+
+      // Notify caller that uploadId is ready
+      if (onUploadIdReady) {
+        onUploadIdReady(uploadId)
+      }
+
       if (onProgress) onProgress(1)
 
       let completedChunks = 0
+      let lastReportedProgress = 1
+      const chunkSizes = {}
       const inFlightProgress = {}
+
+      const reportProgressFromBytes = () => {
+        const totalBytes = file.size
+        let uploadedBytes = 0
+
+        // Optimize by iterating directly over entries
+        for (const key in chunkSizes) {
+          const size = chunkSizes[key]
+          const percent = inFlightProgress[key] ?? 0
+          uploadedBytes += (percent / 100) * size
+        }
+
+        const progress = Math.min(95, Math.max(1, Math.round((uploadedBytes / totalBytes) * 95)))
+        if (progress > lastReportedProgress) {
+          lastReportedProgress = progress
+          if (onProgress) {
+            onProgress(progress)
+          }
+        }
+      }
 
       for (let i = 1; i <= totalChunks; i += parallel) {
         const batch = []
@@ -149,21 +194,18 @@ export function useChunkedUpload() {
           const end = Math.min(start + chunkSize, file.size)
           const chunk = file.slice(start, end)
 
+          chunkSizes[chunkNum] = chunk.size
+          inFlightProgress[chunkNum] = 0
+
           batch.push(
             uploadChunk(uploadId, chunkNum, chunk, totalChunks, (percent) => {
               inFlightProgress[chunkNum] = percent
-              if (onProgress) {
-                const inFlightSum = Object.values(inFlightProgress).reduce((acc, val) => acc + val, 0)
-                const progress = Math.round(((completedChunks + (inFlightSum / 100)) / totalChunks) * 95)
-                onProgress(progress)
-              }
+              reportProgressFromBytes()
+            }).then(() => {
+              completedChunks++
+              inFlightProgress[chunkNum] = 100
+              reportProgressFromBytes()
             })
-              .then(() => {
-                delete inFlightProgress[chunkNum]
-                completedChunks++
-                const progress = Math.round((completedChunks / totalChunks) * 95)
-                if (onProgress) onProgress(progress)
-              })
           )
         }
         await Promise.all(batch)
@@ -174,7 +216,7 @@ export function useChunkedUpload() {
         uploadId,
         fileHash: null
       }, {
-        timeout: 0
+        timeout: 1800000 // 30 minutes timeout for finalization
       })
 
       if (onProgress) onProgress(100)
@@ -188,12 +230,20 @@ export function useChunkedUpload() {
         }
       }))
 
+      // Clean up AbortController
+      delete abortControllers.current[uploadId]
+
       return { success: true, fileId: completeRes.data.fileId, uploadId }
     };
 
     try {
       return await runUpload(pickSettings(0))
     } catch (error) {
+      // Check if upload was cancelled
+      if (error.name === 'CanceledError' || error.code === 'ERR_CANCELED') {
+        throw new Error('Upload cancelled')
+      }
+      
       const status = error?.response?.status
       const msg = error?.message || ''
       const isTimeout = msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('network')
@@ -204,7 +254,6 @@ export function useChunkedUpload() {
           return await runUpload(pickSettings(2))
         }
       }
-      console.error('Upload failed:', error)
       throw error
     }
   }, [initUpload, uploadChunk])
@@ -220,14 +269,36 @@ export function useChunkedUpload() {
 
   const cancelUpload = useCallback(async (uploadId) => {
     try {
+      // Abort ongoing requests
+      if (abortControllers.current[uploadId]) {
+        abortControllers.current[uploadId].abort()
+        delete abortControllers.current[uploadId]
+      }
+
+      // Update local state immediately
+      setUploads(prev => ({
+        ...prev,
+        [uploadId]: {
+          ...prev[uploadId],
+          status: 'cancelled',
+          error: 'Upload cancelled by user'
+        }
+      }))
+
+      // Notify backend to cleanup
       await api.delete(`/files/chunked/${uploadId}`)
-      setUploads(prev => {
-        const updated = { ...prev }
-        delete updated[uploadId]
-        return updated
-      })
+
+      // Remove from state after backend confirms
+      setTimeout(() => {
+        setUploads(prev => {
+          const updated = { ...prev }
+          delete updated[uploadId]
+          return updated
+        })
+      }, 1000)
     } catch (error) {
-      throw error
+      // Even if backend call fails, local cancellation succeeded via AbortController
+      // Silently handle server cleanup errors as they're not critical
     }
   }, [])
 
