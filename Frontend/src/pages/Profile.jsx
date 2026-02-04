@@ -84,96 +84,100 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-6">Edit Profile</h2>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-4 py-8">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center text-gray-800">Edit Profile</h2>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 text-red-800 rounded">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-4 p-3 bg-green-100 text-green-800 rounded">
-          {success}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Profile Photo Section */}
-        <div className="flex flex-col items-center gap-4">
-          {profilePreview ? (
-            <img
-              src={profilePreview}
-              alt="Profile preview"
-              className="w-24 h-24 rounded-full object-cover border-2 border-blue-300"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-semibold text-gray-600 border-2 border-gray-300">
-              {getInitials(username || user?.username)}
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+              {error}
             </div>
           )}
-          <label className="cursor-pointer">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handlePhotoChange}
-              className="hidden"
-            />
-            <span className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 inline-block">
-              Change Photo
-            </span>
-          </label>
-        </div>
 
-        {/* Username Field */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Username
-          </label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter username"
-            required
-          />
-        </div>
+          {success && (
+            <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-lg text-sm">
+              {success}
+            </div>
+          )}
 
-        {/* Email Field */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter email"
-            required
-          />
-        </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Profile Photo Section */}
+            <div className="flex flex-col items-center gap-4">
+              {profilePreview ? (
+                <img
+                  src={profilePreview}
+                  alt="Profile preview"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-blue-300"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-3xl font-semibold text-gray-600 border-4 border-gray-300">
+                  {getInitials(username || user?.username)}
+                </div>
+              )}
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                  className="hidden"
+                />
+                <span className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 inline-block cursor-pointer font-medium">
+                  Change Photo
+                </span>
+              </label>
+            </div>
 
-        {/* Buttons */}
-        <div className="flex gap-3 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="flex-1 px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
-          >
-            Cancel
-          </button>
+            {/* Username Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Username
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter username"
+                required
+              />
+            </div>
+
+            {/* Email Field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter email"
+                required
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col md:flex-row gap-3 pt-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-semibold transition"
+              >
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="flex-1 px-4 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 font-semibold transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
-      </form>
+      </div>
     </div>
   )
 }

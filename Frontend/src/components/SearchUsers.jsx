@@ -82,39 +82,39 @@ export default function SearchUsers({ showNotification, onFriendAdded }) {
           placeholder="🔍 Search users..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {searching && <span className="text-xs text-gray-500 absolute right-2 top-3">Searching...</span>}
       </div>
 
       {searchResults.length > 0 && (
-        <div className="mt-3 space-y-2 max-h-96 overflow-auto">
+        <div className="mt-3 space-y-2 max-h-64 overflow-auto">
           {searchResults.map(user => (
             <div
               key={user._id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-sm"
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 {user.profilePhoto ? (
                   <img
                     src={getPhotoUrl(user.profilePhoto)}
                     alt={user.username}
-                    className="w-8 h-8 rounded-full object-cover border"
+                    className="w-8 h-8 rounded-full object-cover border flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600 flex-shrink-0">
                     {getInitials(user.username)}
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm">{user.username}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-gray-800 truncate">{user.username}</div>
                   <div className="text-xs text-gray-500 truncate">{user.email}</div>
                 </div>
               </div>
               <button
                 onClick={() => handleSendRequest(user._id)}
                 disabled={loading || user.friendStatus === 'accepted'}
-                className={`text-xs px-3 py-1 rounded transition-colors ${getButtonStyle(user)} disabled:opacity-50 cursor-pointer whitespace-nowrap`}
+                className={`text-xs px-2 py-1 rounded transition-colors ${getButtonStyle(user)} disabled:opacity-50 cursor-pointer whitespace-nowrap flex-shrink-0 ml-2`}
               >
                 {getButtonText(user)}
               </button>
