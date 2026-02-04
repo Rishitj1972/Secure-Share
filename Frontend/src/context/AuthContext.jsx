@@ -113,7 +113,10 @@ export function AuthProvider({ children }){
   }
 
   const register = async (data) => {
-    const res = await api.post('/auth/register', data)
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData
+    const res = await api.post('/auth/register', data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined
+    })
     return res.data
   }
 

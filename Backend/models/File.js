@@ -35,6 +35,22 @@ const FileSchema = new Schema(
     mimeType: { 
       type: String 
     },
+    encryptedAesKey: {
+      type: String,
+      default: null
+    },
+    iv: {
+      type: String,
+      default: null
+    },
+    fileHash: {
+      type: String,
+      default: null
+    },
+    isEncrypted: {
+      type: Boolean,
+      default: false
+    },
     isDownloaded: { 
       type: Boolean, 
       default: false 

@@ -14,6 +14,14 @@ const userSchema = mongoose.Schema({
         type: String,
         required: [true, "Please add a password"]
     },
+    rsaPublicKey: {
+        type: String,
+        default: null
+    },
+    profilePhoto: {
+        type: String,
+        default: null
+    },
     currentToken: {
         type: String,
         default: null

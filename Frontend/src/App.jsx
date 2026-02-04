@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Chat from './pages/Chat'
 import UserFiles from './pages/UserFiles'
+import Profile from './pages/Profile'
 import NotFound from './pages/NotFound'
 
 function PrivateRoute({ children }){
@@ -31,7 +32,10 @@ export default function App(){
         </div>
         <div className="flex items-center gap-3">
           {user ? (
-            <button className="btn" onClick={logout}>Logout</button>
+            <>
+              <Link to="/profile" className="text-sm text-gray-700 hover:text-gray-900">👤 Profile</Link>
+              <button className="btn" onClick={logout}>Logout</button>
+            </>
           ) : (
             <>
               <Link to="/login">Login</Link>
@@ -44,6 +48,7 @@ export default function App(){
       <Routes>
         <Route path="/" element={<PrivateRoute><Chat /></PrivateRoute>} />
         <Route path="/users/:id" element={<PrivateRoute><UserFiles /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="*" element={<NotFound />} />

@@ -43,6 +43,18 @@ const UploadSessionSchema = new Schema(
     fileHash: {
       type: String // SHA256 hash of complete file
     },
+    encryptedAesKey: {
+      type: String,
+      default: null
+    },
+    iv: {
+      type: String,
+      default: null
+    },
+    isEncrypted: {
+      type: Boolean,
+      default: false
+    },
     status: {
       type: String,
       enum: ['in-progress', 'completed', 'failed', 'cancelled'],

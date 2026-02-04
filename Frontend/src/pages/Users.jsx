@@ -3,6 +3,22 @@ import { Link, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const uploadsBase = baseURL.replace(/\/api\/?$/, '')
+
+function getPhotoUrl(photo) {
+  if (!photo) return ''
+  if (photo.startsWith('http')) return photo
+  return `${uploadsBase}${photo}`
+}
+
+function getInitials(name = '') {
+  const parts = name.trim().split(' ').filter(Boolean)
+  const first = parts[0]?.[0] || ''
+  const second = parts[1]?.[0] || ''
+  return (first + second).toUpperCase() || '?'
+}
+
 export default function Users(){
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -46,9 +62,22 @@ export default function Users(){
       {!loading && <div className="grid gap-3">
         {users.map(u => (
           <Link to={`/users/${u._id}`} key={u._id} className="p-3 border rounded hover:bg-gray-50 flex items-center justify-between">
-            <div>
-              <div className="font-medium">{u.name || u.username}</div>
-              <div className="text-sm text-gray-500">{u.email}</div>
+            <div className="flex items-center gap-3">
+              {u.profilePhoto ? (
+                <img
+                  src={getPhotoUrl(u.profilePhoto)}
+                  alt={u.username || u.name}
+                  className="w-10 h-10 rounded-full object-cover border"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-600">
+                  {getInitials(u.name || u.username)}
+                </div>
+              )}
+              <div>
+                <div className="font-medium">{u.name || u.username}</div>
+                <div className="text-sm text-gray-500">{u.email}</div>
+              </div>
             </div>
             <div className="text-sm text-sky-600">Open</div>
           </Link>

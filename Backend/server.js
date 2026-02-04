@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const http = require('http');
 const cors = require('cors');
 const connectDB = require('./config/dbConnection');
@@ -58,9 +59,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Increase body size limits for chunked uploads (50MB chunks + overhead)
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+// Increase body size limits for large file uploads with encryption metadata
+app.use(express.json({ limit: '200mb' }));
+app.use(express.urlencoded({ extended: true, limit: '200mb' }));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Set server timeout for large file uploads (60 minutes for safety)
 server.timeout = 3600000; // 60 minutes
@@ -68,6 +72,7 @@ server.keepAliveTimeout = 3610000; // Slightly more than timeout
 server.headersTimeout = 3620000; // Extra buffer for headers
 app.use("/api", require("./routes/userRoutes"));
 app.use("/api/files", require("./routes/fileRoutes"));
+app.use("/api/friends", require("./routes/friendRoutes"));
 app.use(require("./middleware/errorHandler"));
 
 server.listen(port, () => {

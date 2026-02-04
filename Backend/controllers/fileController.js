@@ -70,7 +70,7 @@ const getInbox = asyncHandler(async (req, res) => {
   const files = await File.find({ receiver: userId })
     .sort({ createdAt: -1 })
     .populate('sender', 'username email')
-    .select('_id originalFileName fileSize mimeType sender createdAt isDownloaded');
+    .select('_id originalFileName fileSize mimeType sender createdAt isDownloaded encryptedAesKey iv fileHash isEncrypted');
 
   res.json(files);
 });
@@ -91,7 +91,7 @@ const getConversation = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 })
     .populate('sender', 'username email')
     .populate('receiver', 'username email')
-    .select('_id originalFileName fileSize mimeType sender receiver createdAt isDownloaded');
+    .select('_id originalFileName fileSize mimeType sender receiver createdAt isDownloaded encryptedAesKey iv fileHash isEncrypted');
 
   res.json(files);
 });

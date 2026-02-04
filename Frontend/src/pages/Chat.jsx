@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import UsersList from '../components/UsersList'
 import ConversationPanel from '../components/ConversationPanel'
+import SearchUsers from '../components/SearchUsers'
+import FriendRequests from '../components/FriendRequests'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 
@@ -19,6 +21,7 @@ export default function Chat(){
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState(null)
   const [note, setNote] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(()=>{
     if (!user?.id) return // Don't fetch if user is not logged in
@@ -26,14 +29,13 @@ export default function Chat(){
     const load = async () =>{
       setLoading(true)
       try{
-        const res = await api.get('/users')
+        const res = await api.get('/friends')
 
         if (!Array.isArray(res.data)) {
           throw new Error('Server returned invalid users data')
         }
 
-        const list = res.data.filter(u => u._id !== user?.id)
-        setUsers(list)
+        setUsers(res.data)
         setNote(null) // Clear any previous errors
       }catch(err){
         if (err.response?.status === 401) {
@@ -41,24 +43,35 @@ export default function Chat(){
         } else if (err.response?.status === 500) {
           setNote({ text: 'Server error. Please try again later.', type: 'error' })
         } else {
-          setNote({ text: err?.response?.data?.message || 'Failed to load users', type: 'error' })
+          setNote({ text: err?.response?.data?.message || 'Failed to load friends', type: 'error' })
         }
       }finally{
         setLoading(false)
       }
     }
     load()
-  },[user?.id])
+  },[user?.id, refreshKey])
 
   const showNotification = (text, type='success') => {
     setNote({ text, type })
     setTimeout(()=> setNote(null), 3500)
   }
 
+  const handleFriendAdded = () => {
+    // Refresh friends list when a friend is added
+    setRefreshKey(prev => prev + 1)
+  }
+
   return (
     <div className="h-[calc(100vh-160px)] flex bg-gray-50">
-      <div className="w-64">
-        <UsersList users={users} selectedId={selected?._id} onSelect={u=>setSelected(u)} loading={loading} />
+      <div className="w-64 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-auto">
+          <div className="p-3 border-b">
+            <SearchUsers showNotification={showNotification} onFriendAdded={handleFriendAdded} />
+            <FriendRequests showNotification={showNotification} onRefresh={handleFriendAdded} />
+          </div>
+          <UsersList users={users} selectedId={selected?._id} onSelect={u=>setSelected(u)} loading={loading} />
+        </div>
       </div>
       <div className="flex-1">
         <ConversationPanel userId={selected?._id} userObj={selected} showNotification={showNotification} />

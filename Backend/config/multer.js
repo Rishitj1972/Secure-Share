@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { 
-    fileSize: 100 * 1024 * 1024, // 100MB per chunk (supports up to 15MB dynamic chunks + overhead)
+    fileSize: 200 * 1024 * 1024, // 200MB per chunk (supports up to 100MB dynamic chunks + overhead)
     files: 1,
     fieldSize: 10 * 1024 * 1024 // 10MB for form fields
   },

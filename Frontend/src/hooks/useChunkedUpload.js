@@ -14,14 +14,18 @@ export function useChunkedUpload() {
     return CryptoJS.SHA256(wordArray).toString()
   }, [])
 
-  const initUpload = useCallback(async (file, receiverId, preferredChunkSize) => {
+  const initUpload = useCallback(async (file, receiverId, preferredChunkSize, encryptionData = null) => {
     try {
       const res = await api.post('/files/chunked/init', {
         filename: file.name,
         fileSize: file.size,
         receiver: receiverId,
         mimeType: file.type,
-        preferredChunkSize
+        preferredChunkSize,
+        encryptedAesKey: encryptionData?.encryptedAesKey,
+        iv: encryptionData?.iv,
+        fileHash: encryptionData?.fileHash,
+        isEncrypted: !!encryptionData
       })
 
       const { uploadId, chunkSize, totalChunks } = res.data
@@ -131,25 +135,26 @@ export function useChunkedUpload() {
     throw lastError
   }, [calculateChunkHash, sleep])
 
-  const uploadFile = useCallback(async (file, receiverId, onProgress, onUploadIdReady) => {
+  const uploadFile = useCallback(async (file, receiverId, onProgress, onUploadIdReady, encryptionData = null) => {
     const fileSizeInMB = file.size / (1024 * 1024);
 
     const pickSettings = (level) => {
       if (level === 0) {
-        // Reduced chunk sizes for stable uploads through slow networks (Cloudflare tunnel)
-        if (fileSizeInMB < 50) return { chunkSize: 2 * 1024 * 1024, parallel: 2 }; // 2MB chunks
-        if (fileSizeInMB < 200) return { chunkSize: 5 * 1024 * 1024, parallel: 2 }; // 5MB chunks
-        if (fileSizeInMB < 500) return { chunkSize: 10 * 1024 * 1024, parallel: 2 }; // 10MB chunks
-        return { chunkSize: 15 * 1024 * 1024, parallel: 2 }; // 15MB chunks for large files
+        // Level 0: Optimized for stable networks and large files
+        // Larger chunks = fewer total uploads = faster for large files
+        if (fileSizeInMB < 100) return { chunkSize: 10 * 1024 * 1024, parallel: 2 }; // 10MB chunks
+        if (fileSizeInMB < 500) return { chunkSize: 25 * 1024 * 1024, parallel: 2 }; // 25MB chunks
+        if (fileSizeInMB < 2000) return { chunkSize: 50 * 1024 * 1024, parallel: 2 }; // 50MB chunks
+        return { chunkSize: 100 * 1024 * 1024, parallel: 2 }; // 100MB chunks for 5GB+ files (only 50 chunks for 5GB)
       }
       if (level === 1) {
-        return { chunkSize: 5 * 1024 * 1024, parallel: 1 }; // 5MB, single parallel
+        return { chunkSize: 25 * 1024 * 1024, parallel: 1 }; // 25MB, single parallel
       }
-      return { chunkSize: 2 * 1024 * 1024, parallel: 1 }; // 2MB, single parallel
+      return { chunkSize: 10 * 1024 * 1024, parallel: 1 }; // 10MB, single parallel
     };
 
     const runUpload = async ({ chunkSize: preferredChunkSize, parallel }) => {
-      const { uploadId, chunkSize, totalChunks } = await initUpload(file, receiverId, preferredChunkSize)
+      const { uploadId, chunkSize, totalChunks } = await initUpload(file, receiverId, preferredChunkSize, encryptionData)
 
       // Create AbortController for this upload
       abortControllers.current[uploadId] = new AbortController()

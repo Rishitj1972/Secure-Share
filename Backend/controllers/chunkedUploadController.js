@@ -20,7 +20,7 @@ if (!fs.existsSync(CHUNKS_DIR)) fs.mkdirSync(CHUNKS_DIR, { recursive: true });
 // @access Protected
 const initChunkedUpload = asyncHandler(async (req, res) => {
   const senderId = req.user.id;
-  const { filename, fileSize, receiver, mimeType, preferredChunkSize } = req.body;
+  const { filename, fileSize, receiver, mimeType, preferredChunkSize, encryptedAesKey, iv, fileHash, isEncrypted } = req.body;
 
   if (!filename || !fileSize || !receiver || !mimeType) {
     res.status(400);
@@ -42,6 +42,12 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
   if (!receiverUser) {
     res.status(404);
     throw new Error('Receiver user not found');
+  }
+
+  // If encrypted, verify encryption data
+  if (isEncrypted && (!encryptedAesKey || !iv || !fileHash)) {
+    res.status(400);
+    throw new Error('Encrypted upload missing encryption metadata');
   }
 
   // Dynamic chunk size based on file size, with optional client preference
@@ -75,7 +81,11 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
     chunkSize,
     totalChunks,
     mimeType,
-    status: 'in-progress'
+    status: 'in-progress',
+    encryptedAesKey: isEncrypted ? encryptedAesKey : null,
+    iv: isEncrypted ? iv : null,
+    fileHash: isEncrypted ? fileHash : null,
+    isEncrypted: !!isEncrypted
   });
 
   // Create directory for this upload's chunks
@@ -342,7 +352,11 @@ const completeChunkedUpload = asyncHandler(async (req, res) => {
       storedFileName: uniqueFilename,
       filePath: path.join('uploads', uniqueFilename).replace(/\\/g, '/'), // Normalize path
       fileSize: uploadSession.fileSize,
-      mimeType: uploadSession.mimeType
+      mimeType: uploadSession.mimeType,
+      encryptedAesKey: uploadSession.encryptedAesKey,
+      iv: uploadSession.iv,
+      fileHash: uploadSession.fileHash,
+      isEncrypted: uploadSession.isEncrypted
     });
 
     // Update upload session
