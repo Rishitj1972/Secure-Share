@@ -60,22 +60,22 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
-export default function FileCard({ file, onDownload, onDelete, isSent, currentUserId, isDownloading, downloadProgress, downloadStage }){
+export default function FileCard({ file, onDownload, onDelete, isSent, currentUserId, isDownloading, downloadingFileId, downloadProgress, downloadStage }){
   const name = file.originalFileName || file.originalName || 'file'
   const sizeFormatted = formatFileSize(file.fileSize)
   const time = file.createdAt ? new Date(file.createdAt).toLocaleString() : ''
   
   // Check if this specific file is being downloaded
-  const isThisFileDownloading = isDownloading && !isSent
+  const isThisFileDownloading = isDownloading && !isSent && downloadingFileId === file._id
   
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-xl shadow-sm border transition-all hover:shadow-md ${
+    <div className={`flex flex-col md:flex-row items-start gap-3 p-3 md:p-4 rounded-xl shadow-sm border transition-all hover:shadow-md ${
       isSent 
-        ? 'bg-green-50 border-green-200 ml-8' 
-        : 'bg-blue-50 border-blue-200 mr-8'
+        ? 'bg-green-50 border-green-200 md:ml-8' 
+        : 'bg-blue-50 border-blue-200 md:mr-8'
     }`}>
       {/* File Icon or Download Progress */}
-      <div className="relative flex-shrink-0">
+      <div className="relative flex-shrink-0 scale-90 md:scale-100 origin-top">
         {isThisFileDownloading ? (
           <div className="flex flex-col items-center gap-1">
             <CircularProgress progress={downloadProgress} size={56} strokeWidth={4} />
@@ -91,8 +91,8 @@ export default function FileCard({ file, onDownload, onDelete, isSent, currentUs
         )}
       </div>
       
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
+      <div className="flex-1 min-w-0 w-full">
+        <div className="flex flex-col md:flex-row items-start justify-between gap-3 md:gap-2">
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-gray-900 truncate">{name}</div>
             <div className="flex items-center gap-2 mt-1">
@@ -119,12 +119,12 @@ export default function FileCard({ file, onDownload, onDelete, isSent, currentUs
           </div>
           
           {/* Action buttons */}
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 w-full md:w-auto justify-end md:justify-start">
             {!isSent && (
               !isThisFileDownloading && (
                 <button 
-                  onClick={() => onDownload(file._id)} 
-                  className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                  onClick={onDownload} 
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors w-full md:w-auto justify-center"
                 >
                   <ArrowDownTrayIcon className="w-4 h-4" />
                   <span>Download</span>

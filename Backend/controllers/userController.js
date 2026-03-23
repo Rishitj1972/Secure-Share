@@ -24,7 +24,7 @@ const registerUser = asyncHandler( async (req,res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const profilePhoto = req.file?.filename ? `/uploads/${req.file.filename}` : null;
+    const profilePhoto = req.file?.filename ? `/uploads/profiles/${req.file.filename}` : null;
 
     const user = await User.create({
         username,
@@ -158,7 +158,7 @@ const updateProfile = asyncHandler( async (req, res) => {
     
     // Update profile photo if file was uploaded
     if (req.file) {
-        user.profilePhoto = `/uploads/${req.file.filename}`;
+        user.profilePhoto = `/uploads/profiles/${req.file.filename}`;
     }
     
     await user.save();
@@ -183,6 +183,7 @@ const logoutUser = asyncHandler( async (req, res) => {
     if (user) {
         user.currentToken = null;
         user.tokenExpiresAt = null;
+        user.lastActiveAt = null;
         await user.save();
     }
     res.status(200).json({ message: 'Logged out successfully' });

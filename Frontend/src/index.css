@@ -5,9 +5,44 @@
 /* small helper overrides to keep existing look where appropriate */
 html, body, #root { height: 100%; }
 .body-bg { background: #f6f8fa }
-.app { @apply max-w-6xl mx-auto my-6 bg-white rounded-xl shadow p-6 }
+.app { @apply max-w-6xl mx-auto my-0 md:my-6 bg-white rounded-xl shadow p-6 h-screen overflow-hidden }
 .form { @apply flex flex-col gap-2 }
 .input { @apply p-2 border border-gray-200 rounded }
 .btn { @apply px-4 py-2 bg-sky-600 text-white rounded hover:bg-sky-700 }
 .nav { @apply flex gap-4 mb-4 }
 .file-item { @apply flex justify-between items-center p-2 border-b border-gray-100 }
+
+/* Custom scrollbar styling for better visibility */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #9CA3AF #F3F4F6;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #F3F4F6;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #9CA3AF;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6B7280;
+}
+
+/* Keep contacts list scrollable within the viewport */
+.contacts-scroll {
+  max-height: calc(100vh - 260px);
+}
+
+@media (min-width: 768px) {
+  .contacts-scroll {
+    max-height: calc(100vh - 300px);
+  }
+}

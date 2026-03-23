@@ -82,39 +82,39 @@ export default function SearchUsers({ showNotification, onFriendAdded }) {
           placeholder="🔍 Search users..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        {searching && <span className="text-xs text-gray-500 absolute right-2 top-3">Searching...</span>}
+        {searching && <span className="text-[11px] md:text-xs text-gray-500 absolute right-2 top-3">Searching...</span>}
       </div>
 
       {searchResults.length > 0 && (
-        <div className="mt-3 space-y-2 max-h-64 overflow-auto">
+        <div className="mt-3 space-y-2 max-h-56 md:max-h-64 overflow-auto">
           {searchResults.map(user => (
             <div
               key={user._id}
-              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-sm"
+              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-xs md:text-sm"
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 {user.profilePhoto ? (
                   <img
                     src={getPhotoUrl(user.profilePhoto)}
                     alt={user.username}
-                    className="w-8 h-8 rounded-full object-cover border flex-shrink-0"
+                    className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover border flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-gray-600 flex-shrink-0">
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-200 flex items-center justify-center text-[10px] md:text-xs font-semibold text-gray-600 flex-shrink-0">
                     {getInitials(user.username)}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-gray-800 truncate">{user.username}</div>
-                  <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                  <div className="font-medium text-gray-800 truncate text-xs md:text-sm">{user.username}</div>
+                  <div className="text-[11px] md:text-xs text-gray-500 truncate">{user.email}</div>
                 </div>
               </div>
               <button
                 onClick={() => handleSendRequest(user._id)}
                 disabled={loading || user.friendStatus === 'accepted'}
-                className={`text-xs px-2 py-1 rounded transition-colors ${getButtonStyle(user)} disabled:opacity-50 cursor-pointer whitespace-nowrap flex-shrink-0 ml-2`}
+                className={`text-[11px] md:text-xs px-2 py-1 rounded transition-colors ${getButtonStyle(user)} disabled:opacity-50 cursor-pointer whitespace-nowrap flex-shrink-0 ml-2`}
               >
                 {getButtonText(user)}
               </button>
@@ -124,7 +124,7 @@ export default function SearchUsers({ showNotification, onFriendAdded }) {
       )}
 
       {searchQuery.trim().length > 0 && searchResults.length === 0 && !searching && (
-        <div className="text-xs text-gray-500 mt-2 text-center py-2">No users found</div>
+        <div className="text-[11px] md:text-xs text-gray-500 mt-2 text-center py-2">No users found</div>
       )}
     </div>
   )

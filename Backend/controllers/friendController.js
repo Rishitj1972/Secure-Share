@@ -183,6 +183,57 @@ const getFriends = asyncHandler(async (req, res) => {
     res.status(200).json(friends);
 });
 
+// @desc Get presence status for friends
+// @route GET /api/friends/presence
+// @access Private
+const getFriendsPresence = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const ACTIVE_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+
+    const friendships = await Friend.find(
+        {
+            $and: [
+                { status: 'accepted' },
+                {
+                    $or: [
+                        { requester: userId },
+                        { receiver: userId }
+                    ]
+                }
+            ]
+        }
+    ).select('requester receiver').lean();
+
+    const friendIds = friendships.map(friendship => (
+        friendship.requester.toString() === userId.toString()
+            ? friendship.receiver
+            : friendship.requester
+    ));
+
+    if (friendIds.length === 0) {
+        return res.status(200).json([]);
+    }
+
+    const friends = await User.find({ _id: { $in: friendIds } })
+        .select('_id lastActiveAt currentToken tokenExpiresAt')
+        .lean();
+
+    const now = Date.now();
+    const presence = friends.map((friend) => {
+        const lastActiveAt = friend.lastActiveAt ? new Date(friend.lastActiveAt) : null;
+        const hasValidSession = !!friend.currentToken && (!friend.tokenExpiresAt || new Date(friend.tokenExpiresAt).getTime() > now);
+        const isActive = hasValidSession && !!lastActiveAt && (now - lastActiveAt.getTime()) <= ACTIVE_WINDOW_MS;
+
+        return {
+            userId: friend._id,
+            isActive,
+            lastSeen: lastActiveAt
+        };
+    });
+
+    res.status(200).json(presence);
+});
+
 // @desc Get pending friend requests
 // @route GET /api/friends/requests/pending
 // @access Private
@@ -218,12 +269,40 @@ const getFriendStatus = asyncHandler(async (req, res) => {
     });
 });
 
+// @desc Unfriend a user
+// @route DELETE /api/friends/:userId
+// @access Private
+const unfriend = asyncHandler(async (req, res) => {
+    const { userId: targetUserId } = req.params;
+    const userId = req.user.id;
+
+    // Find and delete the friendship
+    const friendship = await Friend.findOneAndDelete({
+        $or: [
+            { requester: userId, receiver: targetUserId, status: 'accepted' },
+            { requester: targetUserId, receiver: userId, status: 'accepted' }
+        ]
+    });
+
+    if (!friendship) {
+        res.status(404);
+        throw new Error('Friendship not found or already removed');
+    }
+
+    res.status(200).json({
+        message: 'Friend removed successfully',
+        friendshipId: friendship._id
+    });
+});
+
 module.exports = {
     searchUsers,
     sendFriendRequest,
     acceptFriendRequest,
     rejectFriendRequest,
     getFriends,
+    getFriendsPresence,
     getPendingRequests,
-    getFriendStatus
+    getFriendStatus,
+    unfriend
 };

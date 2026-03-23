@@ -37,6 +37,13 @@ const validateToken = expressAsyncHandler(async (req, res, next) => {
       res.status(401);
       throw new Error('Token has expired. Please login again');
     }
+
+    // Keep presence lightweight: update activity at most once per minute.
+    const now = Date.now();
+    const lastActive = user.lastActiveAt ? new Date(user.lastActiveAt).getTime() : 0;
+    if (!lastActive || (now - lastActive) > 60 * 1000) {
+      User.findByIdAndUpdate(user._id, { lastActiveAt: new Date(now) }).exec().catch(() => {});
+    }
     
     req.user = decoded.user;
     next();

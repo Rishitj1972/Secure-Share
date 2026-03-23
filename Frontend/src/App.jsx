@@ -75,14 +75,16 @@ export default function App(){
         </div>
       )}
 
-      <Routes>
-        <Route path="/" element={<PrivateRoute><Chat /></PrivateRoute>} />
-        <Route path="/users/:id" element={<PrivateRoute><UserFiles /></PrivateRoute>} />
-        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <div className="flex-1 min-h-0">
+        <Routes>
+          <Route path="/" element={<PrivateRoute><Chat /></PrivateRoute>} />
+          <Route path="/users/:id" element={<PrivateRoute><UserFiles /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </div>
     </div>
   )
 }
