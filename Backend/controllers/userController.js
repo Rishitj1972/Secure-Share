@@ -133,7 +133,7 @@ const getUserById = asyncHandler( async (req, res) => {
 // @access Private
 
 const updateProfile = asyncHandler( async (req, res) => {
-    const { username, email } = req.body;
+    const { username, email, rsaPublicKey } = req.body;
     const userId = req.user.id;
     
     const user = await User.findById(userId);
@@ -154,6 +154,10 @@ const updateProfile = asyncHandler( async (req, res) => {
     
     if (username) {
         user.username = username;
+    }
+
+    if (rsaPublicKey) {
+        user.rsaPublicKey = rsaPublicKey;
     }
     
     // Update profile photo if file was uploaded

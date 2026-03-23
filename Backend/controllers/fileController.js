@@ -67,7 +67,8 @@ const sendFile = asyncHandler(async (req, res) => {
 const getInbox = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
-  const files = await File.find({ receiver: userId })
+  // Only show direct-chat files in inbox. Group-shared files belong in group feeds.
+  const files = await File.find({ receiver: userId, group: null })
     .sort({ createdAt: -1 })
     .populate('sender', 'username email')
     .select('_id originalFileName fileSize mimeType sender createdAt isDownloaded encryptedAesKey iv fileHash isEncrypted');
@@ -83,6 +84,7 @@ const getConversation = asyncHandler(async (req, res) => {
   const otherId = req.params.id;
 
   const files = await File.find({
+    group: null,
     $or: [
       { sender: userId, receiver: otherId },
       { sender: otherId, receiver: userId },

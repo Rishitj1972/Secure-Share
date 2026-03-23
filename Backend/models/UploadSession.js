@@ -20,6 +20,17 @@ const UploadSessionSchema = new Schema(
       ref: 'User',
       required: true
     },
+    group: {
+      type: Schema.Types.ObjectId,
+      ref: 'Group',
+      default: null,
+      index: true
+    },
+    groupShareId: {
+      type: String,
+      default: null,
+      index: true
+    },
     originalFileName: {
       type: String,
       required: true

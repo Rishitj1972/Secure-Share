@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const UploadSession = require('../models/UploadSession');
 const File = require('../models/File');
 const User = require('../models/userModels');
+const Group = require('../models/Group');
 
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 const CHUNKS_DIR = path.join(__dirname, '..', 'uploads', 'chunks');
@@ -20,7 +21,7 @@ if (!fs.existsSync(CHUNKS_DIR)) fs.mkdirSync(CHUNKS_DIR, { recursive: true });
 // @access Protected
 const initChunkedUpload = asyncHandler(async (req, res) => {
   const senderId = req.user.id;
-  const { filename, fileSize, receiver, mimeType, preferredChunkSize, encryptedAesKey, iv, fileHash, isEncrypted } = req.body;
+  const { filename, fileSize, receiver, mimeType, preferredChunkSize, encryptedAesKey, iv, fileHash, isEncrypted, groupId, groupShareId } = req.body;
 
   if (!filename || !fileSize || !receiver || !mimeType) {
     res.status(400);
@@ -42,6 +43,26 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
   if (!receiverUser) {
     res.status(404);
     throw new Error('Receiver user not found');
+  }
+
+  if (groupId) {
+    const group = await Group.findById(groupId).select('members owner');
+    if (!group) {
+      res.status(404);
+      throw new Error('Group not found');
+    }
+
+    const senderAccepted = group.members.some(
+      (member) => member.user.toString() === senderId.toString() && member.status === 'accepted'
+    );
+    const receiverAccepted = group.members.some(
+      (member) => member.user.toString() === receiver.toString() && member.status === 'accepted'
+    );
+
+    if (!senderAccepted || !receiverAccepted) {
+      res.status(403);
+      throw new Error('Both sender and receiver must be accepted group members');
+    }
   }
 
   // If encrypted, verify encryption data
@@ -76,6 +97,8 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
     uploadId,
     sender: senderId,
     receiver,
+    group: groupId || null,
+    groupShareId: groupShareId || null,
     originalFileName: filename,
     fileSize,
     chunkSize,
@@ -348,6 +371,8 @@ const completeChunkedUpload = asyncHandler(async (req, res) => {
     const file = await File.create({
       sender: uploadSession.sender,
       receiver: uploadSession.receiver,
+      group: uploadSession.group || null,
+      groupShareId: uploadSession.groupShareId || null,
       originalFileName: uploadSession.originalFileName,
       storedFileName: uniqueFilename,
       filePath: path.join('uploads', uniqueFilename).replace(/\\/g, '/'), // Normalize path

@@ -15,6 +15,17 @@ const FileSchema = new Schema(
       required: true,
       index: true,
     },
+    group: {
+      type: Schema.Types.ObjectId,
+      ref: "Group",
+      default: null,
+      index: true,
+    },
+    groupShareId: {
+      type: String,
+      default: null,
+      index: true,
+    },
     originalFileName: { 
       type: String, 
       required: true 
@@ -65,5 +76,6 @@ const FileSchema = new Schema(
 // Compound indexes for fast queries
 FileSchema.index({ receiver: 1, createdAt: -1 });
 FileSchema.index({ sender: 1, createdAt: -1 });
+FileSchema.index({ group: 1, createdAt: -1 });
 
 module.exports = mongoose.model("File", FileSchema);

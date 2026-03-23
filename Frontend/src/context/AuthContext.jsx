@@ -1,7 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import api from '../api/axios'
+import { generateRSAKeyPair, getPrivateKey, storePrivateKey } from '../utils/crypto'
 
 const AuthContext = createContext()
+
+function normalizeUserShape(rawUser) {
+  if (!rawUser) return null
+  return {
+    ...rawUser,
+    id: rawUser.id || rawUser._id || null
+  }
+}
 
 export function useAuth(){
   return useContext(AuthContext)
@@ -10,7 +19,7 @@ export function useAuth(){
 export function AuthProvider({ children }){
   const [user, setUser] = useState(() => {
     const raw = localStorage.getItem('user')
-    return raw ? JSON.parse(raw) : null
+    return raw ? normalizeUserShape(JSON.parse(raw)) : null
   })
 
   // Function to handle logout
@@ -100,12 +109,34 @@ export function AuthProvider({ children }){
       localStorage.setItem('token', accessToken)
       
       // Use user data from login response
-      const currentUser = res.data?.user
+      const currentUser = normalizeUserShape(res.data?.user)
       if(!currentUser) throw new Error('Invalid login response: no user data')
       
       localStorage.setItem('user', JSON.stringify(currentUser))
       localStorage.removeItem('logout_triggered')
-      setUser(currentUser)
+
+      // Ensure this browser has private key for the logged in user.
+      // If not present, generate and upload a replacement public key.
+      const normalizedUserId = currentUser.id || currentUser._id
+      const existingPrivateKey = getPrivateKey(normalizedUserId)
+      if (!existingPrivateKey) {
+        try {
+          const { publicKey, privateKey } = await generateRSAKeyPair()
+
+          // Keep local key first so decryption can work immediately in this browser.
+          storePrivateKey(normalizedUserId, privateKey)
+
+          const keyForm = new FormData()
+          keyForm.append('rsaPublicKey', publicKey)
+          await api.put('/users/profile/update', keyForm, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+        } catch (keyErr) {
+          console.error('Key setup warning:', keyErr)
+        }
+      }
+
+      setUser(normalizeUserShape(currentUser))
       return currentUser
     } catch (error) {
       throw error

@@ -293,17 +293,32 @@ function pemToBinary(pem, label) {
 
 // Store private key in localStorage (encrypted with user password in production)
 export function storePrivateKey(userId, privateKey) {
-  localStorage.setItem(`privateKey_${userId}`, privateKey)
+  const normalizedUserId = typeof userId === 'object'
+    ? (userId?.id || userId?._id)
+    : userId
+
+  if (!normalizedUserId || !privateKey) return
+  localStorage.setItem(`privateKey_${normalizedUserId}`, privateKey)
 }
 
 // Retrieve private key from localStorage
 export function getPrivateKey(userId) {
-  return localStorage.getItem(`privateKey_${userId}`)
+  const normalizedUserId = typeof userId === 'object'
+    ? (userId?.id || userId?._id)
+    : userId
+
+  if (!normalizedUserId) return null
+  return localStorage.getItem(`privateKey_${normalizedUserId}`)
 }
 
 // Clear private key from localStorage
 export function clearPrivateKey(userId) {
-  localStorage.removeItem(`privateKey_${userId}`)
+  const normalizedUserId = typeof userId === 'object'
+    ? (userId?.id || userId?._id)
+    : userId
+
+  if (!normalizedUserId) return
+  localStorage.removeItem(`privateKey_${normalizedUserId}`)
 }
 
 // Calculate SHA-256 hash from ArrayBuffer efficiently (for large files)

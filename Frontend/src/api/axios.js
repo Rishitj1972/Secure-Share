@@ -21,6 +21,11 @@ api.interceptors.request.use((config) => {
   // Ensure ngrok warning header is always sent
   config.headers['ngrok-skip-browser-warning'] = 'true'
   
+  // Don't override Content-Type for FormData (needed for multipart uploads)
+  if (!(config.data instanceof FormData)) {
+    config.headers['Content-Type'] = 'application/json'
+  }
+  
   // Set longer timeout for chunk uploads (30 minutes)
   if (config.url && config.url.includes('chunked')) {
     config.timeout = 1800000 // 30 minutes for chunked uploads

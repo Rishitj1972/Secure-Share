@@ -73,6 +73,7 @@ server.headersTimeout = 3620000; // Extra buffer for headers
 app.use("/api", require("./routes/userRoutes"));
 app.use("/api/files", require("./routes/fileRoutes"));
 app.use("/api/friends", require("./routes/friendRoutes"));
+app.use("/api/groups", require("./routes/groupRoutes"));
 app.use(require("./middleware/errorHandler"));
 
 server.listen(port, () => {

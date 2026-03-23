@@ -38,7 +38,7 @@ export default function Register(){
       const response = await register(formData)
       
       // Store private key locally
-      storePrivateKey(response.user?.id || response.id, privateKey)
+      storePrivateKey(response.user?.id || response.user?._id || response.id || response._id, privateKey)
       
       setError('Registration successful! Redirecting...')
       setTimeout(() => nav('/login'), 1000)
