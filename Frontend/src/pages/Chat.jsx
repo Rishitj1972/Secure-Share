@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext'
 function Notification({ note }){
   if(!note) return null
   return (
-    <div className={`fixed right-4 top-4 px-4 py-2 rounded shadow ${note.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+    <div className={`fixed right-3 md:right-6 top-3 md:top-6 z-50 px-4 py-2.5 rounded-xl shadow-lg border text-sm ${note.type === 'error' ? 'bg-[#ffeced] text-[#a03442] border-[#f2c8ce]' : 'bg-[#e5f8ef] text-[#196e4a] border-[#bcead2]'}`}>
       {note.text}
     </div>
   )
@@ -28,6 +28,8 @@ export default function Chat(){
   const [latestCreatedGroupId, setLatestCreatedGroupId] = useState(null)
   const [mode, setMode] = useState('friends')
   const [note, setNote] = useState(null)
+
+  const hasActiveConversation = mode === 'groups' ? !!selectedGroup : !!selectedFriend
 
   const loadFriends = async () => {
     const res = await api.get('/friends')
@@ -165,36 +167,36 @@ export default function Chat(){
   }
 
   return (
-    <div className="h-[calc(100vh-160px)] flex bg-gradient-to-br from-slate-50 to-sky-50">
+    <div className="h-full flex flex-col md:flex-row section-card overflow-hidden">
       {/* Sidebar */}
-      <div className="w-full sm:w-72 lg:w-80 border-r border-slate-200 bg-white flex flex-col min-h-0 shadow-sm">
+      <div className={`${hasActiveConversation ? 'hidden md:flex' : 'flex'} w-full md:w-80 lg:w-96 md:border-r border-[#d6e7e0] bg-[#fcfffd] flex-col min-h-0 shadow-sm h-full md:h-auto`}>
         {/* Header */}
-        <div className="px-4 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-blue-700 sticky top-0 z-20">
+        <div className="px-4 py-4 border-b border-[#d6e7e0] bg-gradient-to-r from-[#0e9f8b] to-[#0a7e6e] sticky top-0 z-20">
           <h1 className="font-bold text-lg text-white mb-3 flex items-center gap-2">
-            <span className="text-xl">🔐</span> Secure Share
+            Secure Share
           </h1>
           
           {/* Mode Toggle */}
-          <div className="flex gap-2 bg-blue-500/30 rounded-lg p-1.5">
+          <div className="flex gap-2 bg-[#0a6b5e]/35 rounded-xl p-1.5">
             <button
               onClick={() => setMode('friends')}
               className={`flex-1 px-3 py-2 text-xs md:text-sm font-semibold rounded-md transition-all duration-200 ${
                 mode === 'friends'
-                  ? 'bg-white text-blue-700 shadow-md'
+                  ? 'bg-white text-[#0a7e6e] shadow-md'
                   : 'text-white hover:bg-white/10'
               }`}
             >
-              👥 Friends
+              Friends
             </button>
             <button
               onClick={() => setMode('groups')}
               className={`flex-1 px-3 py-2 text-xs md:text-sm font-semibold rounded-md transition-all duration-200 ${
                 mode === 'groups'
-                  ? 'bg-white text-blue-700 shadow-md'
+                  ? 'bg-white text-[#0a7e6e] shadow-md'
                   : 'text-white hover:bg-white/10'
               }`}
             >
-              👫 Groups
+              Groups
             </button>
           </div>
         </div>
@@ -203,10 +205,10 @@ export default function Chat(){
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           {mode === 'friends' ? (
             <>
-              <div className="px-3 py-3 border-b border-slate-200 flex-shrink-0">
+              <div className="px-3 py-2 border-b border-slate-200 flex-shrink-0">
                 <SearchUsers showNotification={showNotification} onFriendAdded={refreshFriends} />
               </div>
-              <div className="px-3 py-2 border-b border-slate-200 flex-shrink-0">
+              <div className="px-3 py-1.5 border-b border-slate-200 flex-shrink-0">
                 <FriendRequests showNotification={showNotification} onRefresh={refreshFriends} />
               </div>
               <div className="flex-1 min-h-0 overflow-hidden">
@@ -242,7 +244,22 @@ export default function Chat(){
       </div>
 
       {/* Main Conversation Area */}
-      <div className="flex-1 flex flex-col min-h-0 bg-white overflow-hidden">
+      <div className={`${hasActiveConversation ? 'flex' : 'hidden md:flex'} flex-1 flex-col min-h-0 bg-[#fafffd] overflow-hidden h-full md:h-auto`}>
+        <div className="md:hidden border-b border-[#d8e7e1] px-3 py-2.5 bg-white flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedFriend(null)
+              setSelectedGroup(null)
+            }}
+            className="px-2.5 py-1.5 rounded-lg border border-[#cde0d7] text-[#315e56] bg-[#f6fcf9]"
+          >
+            Back
+          </button>
+          <div className="text-sm font-semibold text-[#123a33] truncate">
+            {selectedGroup?.name || selectedFriend?.name || selectedFriend?.username || 'Conversation'}
+          </div>
+        </div>
         <ConversationPanel
           userId={selectedFriend?._id}
           userObj={selectedWithPresence}

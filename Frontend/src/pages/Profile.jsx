@@ -84,19 +84,18 @@ export default function Profile() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center text-gray-800">Edit Profile</h2>
+    <div className="h-full flex flex-col items-center justify-center px-3 py-4 md:px-6 md:py-8 overflow-auto">
+      <div className="w-full max-w-md section-card p-6 md:p-8">
+          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center text-[#113730]">Edit Profile</h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+            <div className="mb-4 p-3 bg-[#ffeced] text-[#a03442] rounded-xl text-sm border border-[#f2c8ce]">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="mb-4 p-3 bg-green-100 text-green-800 rounded-lg text-sm">
+            <div className="mb-4 p-3 bg-[#e5f8ef] text-[#196e4a] rounded-xl text-sm border border-[#bcead2]">
               {success}
             </div>
           )}
@@ -108,10 +107,10 @@ export default function Profile() {
                 <img
                   src={profilePreview}
                   alt="Profile preview"
-                  className="w-24 h-24 rounded-full object-cover border-4 border-blue-300"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-[#8ad0c4]"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-3xl font-semibold text-gray-600 border-4 border-gray-300">
+                <div className="w-24 h-24 rounded-full bg-[#e9f2ee] flex items-center justify-center text-3xl font-semibold text-[#56756d] border-4 border-[#cde0d7]">
                   {getInitials(username || user?.username)}
                 </div>
               )}
@@ -122,7 +121,7 @@ export default function Profile() {
                   onChange={handlePhotoChange}
                   className="hidden"
                 />
-                <span className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 inline-block cursor-pointer font-medium">
+                <span className="px-4 py-2 bg-[#e7f7f3] border border-[#cde0d7] text-[#2f5b54] rounded-xl hover:bg-[#dff2ec] inline-block cursor-pointer font-medium">
                   Change Photo
                 </span>
               </label>
@@ -137,7 +136,7 @@ export default function Profile() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="ui-input"
                 placeholder="Enter username"
                 required
               />
@@ -152,7 +151,7 @@ export default function Profile() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="ui-input"
                 placeholder="Enter email"
                 required
               />
@@ -163,20 +162,19 @@ export default function Profile() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 font-semibold transition"
+                className="ui-btn ui-btn-primary flex-1 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Saving...' : 'Save Changes'}
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/')}
-                className="flex-1 px-4 py-3 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 font-semibold transition"
+                className="ui-btn ui-btn-secondary flex-1 py-3"
               >
                 Cancel
               </button>
             </div>
           </form>
-        </div>
       </div>
     </div>
   )

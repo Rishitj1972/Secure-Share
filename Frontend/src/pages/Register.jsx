@@ -50,16 +50,18 @@ export default function Register(){
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center text-gray-800">Create Account</h2>
+    <div className="h-full flex flex-col items-center justify-center px-3 py-4 md:px-6 md:py-8 overflow-auto">
+      <div className="w-full max-w-md section-card p-6 md:p-8">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#113730]">Create Account</h2>
+            <p className="mt-2 text-sm text-[#5b7a72]">Set up your private encrypted workspace</p>
+          </div>
           
           <form className="space-y-4" onSubmit={submit}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+              <label className="block text-sm font-medium text-[#40635b] mb-2">Full Name</label>
               <input 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className="ui-input"
                 placeholder="Enter your name" 
                 value={name} 
                 onChange={e=>setName(e.target.value)}
@@ -68,9 +70,9 @@ export default function Register(){
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-medium text-[#40635b] mb-2">Email</label>
               <input 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className="ui-input"
                 placeholder="Enter your email" 
                 value={email} 
                 onChange={e=>setEmail(e.target.value)}
@@ -79,9 +81,9 @@ export default function Register(){
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label className="block text-sm font-medium text-[#40635b] mb-2">Password</label>
               <input 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className="ui-input"
                 placeholder="Enter your password" 
                 type="password" 
                 value={password} 
@@ -91,7 +93,7 @@ export default function Register(){
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo (Optional)</label>
+              <label className="block text-sm font-medium text-[#40635b] mb-2">Profile Photo (Optional)</label>
               <div className="flex flex-col items-center gap-3">
                 <label className="cursor-pointer w-full">
                   <input
@@ -104,22 +106,22 @@ export default function Register(){
                     }}
                     className="hidden"
                   />
-                  <span className="w-full block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-center cursor-pointer">
-                    📸 Choose Photo
+                  <span className="w-full block px-4 py-2.5 bg-[#eef7f3] text-[#315e56] border border-[#cde0d7] rounded-xl hover:bg-[#e1f2eb] text-center cursor-pointer">
+                    Choose Photo
                   </span>
                 </label>
                 {profilePreview && (
                   <img
                     src={profilePreview}
                     alt="Profile preview"
-                    className="w-20 h-20 rounded-full object-cover border-2 border-blue-300"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-[#7ac4b7]"
                   />
                 )}
               </div>
             </div>
 
             <button 
-              className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50" 
+              className="ui-btn ui-btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               type="submit"
               disabled={!name || !email || !password || loading}
             >
@@ -128,22 +130,21 @@ export default function Register(){
           </form>
 
           {error && (
-            <div className={`mt-4 p-3 rounded-lg text-sm ${
-              error.includes('successful') ? 'bg-green-100 text-green-800' : 
-              error.includes('Generating') || error.includes('Creating') ? 'bg-blue-100 text-blue-800' : 
-              'bg-red-100 text-red-800'
+            <div className={`mt-4 p-3 rounded-xl text-sm border ${
+              error.includes('successful') ? 'bg-[#e5f8ef] text-[#196e4a] border-[#bcead2]' : 
+              error.includes('Generating') || error.includes('Creating') ? 'bg-[#e6f6f2] text-[#0c6f63] border-[#bde7dd]' : 
+              'bg-[#ffeced] text-[#a03442] border-[#f2c8ce]'
             }`}>
               {error}
             </div>
           )}
 
-          <p className="mt-6 text-center text-gray-600 text-sm">
+          <p className="mt-6 text-center text-[#5b7a72] text-sm">
             Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 hover:text-blue-700 font-semibold">
+            <Link to="/login" className="text-[#0b8b79] hover:text-[#0a7365] font-semibold">
               Login here
             </Link>
           </p>
-        </div>
       </div>
     </div>
   )

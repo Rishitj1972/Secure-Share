@@ -100,7 +100,7 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
 
   if (isGroupMode) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow">
+      <div className="rounded-xl border border-[#d8e7e1] bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="min-w-0 flex items-center gap-2">
             {file?.sender?.profilePhoto ? (
@@ -110,15 +110,15 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
                 className="w-6 h-6 rounded-full object-cover border border-slate-200"
               />
             ) : (
-              <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-semibold text-slate-600">
+              <div className="w-6 h-6 rounded-full bg-[#e8f2ee] flex items-center justify-center text-[10px] font-semibold text-[#56756d]">
                 {getInitials(sharedBy)}
               </div>
             )}
             <div className="min-w-0">
-              <div className="text-xs font-medium text-slate-700 truncate">{sharedByLabel}</div>
+              <div className="text-xs font-medium text-[#315e56] truncate">{sharedByLabel}</div>
             </div>
           </div>
-          {time && <div className="text-[10px] text-slate-400 whitespace-nowrap">{time}</div>}
+          {time && <div className="text-[10px] text-[#88a29a] whitespace-nowrap">{time}</div>}
         </div>
 
         <div className="flex items-start gap-2">
@@ -131,14 +131,14 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold text-slate-900 truncate">{name}</div>
+            <div className="text-sm font-semibold text-[#123a33] truncate">{name}</div>
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              <span className="text-xs text-slate-500">{sizeFormatted}</span>
+              <span className="text-xs text-[#5b7a72]">{sizeFormatted}</span>
               {file.isEncrypted && (
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium">🔒 E2EE</span>
+                <span className="text-[10px] bg-[#e6f6f2] text-[#0c6f63] px-1.5 py-0.5 rounded-full font-medium">E2EE</span>
               )}
               {!isSent && file.isDownloaded && (
-                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">Downloaded</span>
+                <span className="text-[10px] bg-[#e6f0ff] text-[#3d66a6] px-1.5 py-0.5 rounded-full font-medium">Downloaded</span>
               )}
             </div>
           </div>
@@ -147,7 +147,7 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
             {!isSent && !isThisFileDownloading && (
               <button
                 onClick={onDownload}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1 bg-[#e8f4f1] border border-[#cde0d7] rounded-md text-xs font-medium text-[#0c6f63] hover:bg-[#dcf0ea] transition-colors"
               >
                 <ArrowDownTrayIcon className="w-3.5 h-3.5" />
                 <span>Download</span>
@@ -156,8 +156,8 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
 
             {canDelete && (
               <Menu as="div" className="relative">
-                <Menu.Button className="p-1.5 rounded-md hover:bg-slate-100 transition-colors">
-                  <EllipsisVerticalIcon className="w-4 h-4 text-slate-600" />
+                <Menu.Button className="p-1.5 rounded-md hover:bg-[#edf4f1] transition-colors">
+                  <EllipsisVerticalIcon className="w-4 h-4 text-[#56756d]" />
                 </Menu.Button>
                 <Menu.Items className="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-1 z-20">
                   <Menu.Item>
@@ -168,7 +168,7 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
                           active ? 'bg-red-50 text-red-600' : 'text-gray-700'
                         }`}
                       >
-                        🗑️ Delete
+                        Delete
                       </button>
                     )}
                   </Menu.Item>
@@ -184,8 +184,8 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
   return (
     <div className={`flex flex-col md:flex-row items-start gap-3 p-3 md:p-4 rounded-xl shadow-sm border transition-all hover:shadow-md ${
       isSent 
-        ? 'bg-green-50 border-green-200 md:ml-8' 
-        : 'bg-blue-50 border-blue-200 md:mr-8'
+        ? 'bg-[#effbf5] border-[#bfe7d2] md:ml-8' 
+        : 'bg-[#edf7f5] border-[#cce2da] md:mr-8'
     }`}>
       {/* File Icon or Download Progress */}
       <div className="relative flex-shrink-0 scale-90 md:scale-100 origin-top">
@@ -209,9 +209,9 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-gray-900 truncate">{name}</div>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-gray-600">{sizeFormatted}</span>
+              <span className="text-sm text-[#5b7a72]">{sizeFormatted}</span>
               {time && <span className="text-xs text-gray-400">• {time}</span>}
-              {file.isEncrypted && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">🔒 E2EE</span>}
+              {file.isEncrypted && <span className="text-xs bg-[#e6f6f2] text-[#0c6f63] px-2 py-0.5 rounded-full font-medium">E2EE</span>}
             </div>
             
             {/* Status indicators */}
@@ -237,7 +237,7 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
               !isThisFileDownloading && (
                 <button 
                   onClick={onDownload} 
-                  className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-blue-300 rounded-lg text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors w-full md:w-auto justify-center"
+                  className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-[#bfd4cb] rounded-lg text-sm font-medium text-[#0c6f63] hover:bg-[#eaf5f2] transition-colors w-full md:w-auto justify-center"
                 >
                   <ArrowDownTrayIcon className="w-4 h-4" />
                   <span>Download</span>
@@ -248,7 +248,7 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
             {canDelete && (
               <Menu as="div" className="relative">
                 <Menu.Button className="p-2 rounded-lg hover:bg-white/50 transition-colors">
-                  <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
+                  <EllipsisVerticalIcon className="w-5 h-5 text-[#56756d]" />
                 </Menu.Button>
                 <Menu.Items className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-1 z-20">
                   <Menu.Item>
@@ -259,7 +259,7 @@ export default function FileCard({ file, onDownload, onDelete, isSent, isGroupMo
                           active ? 'bg-red-50 text-red-600' : 'text-gray-700'
                         }`}
                       >
-                        🗑️ Delete
+                        Delete
                       </button>
                     )}
                   </Menu.Item>

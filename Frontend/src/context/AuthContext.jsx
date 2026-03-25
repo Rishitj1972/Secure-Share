@@ -59,6 +59,8 @@ export function AuthProvider({ children }){
   useEffect(() => {
     if (!user?.id) return
 
+    let lastValidationAt = 0
+
     const validateToken = async () => {
       try {
         const token = localStorage.getItem('token')
@@ -82,21 +84,34 @@ export function AuthProvider({ children }){
       }
     }
 
-    // Validate token every 10 seconds
-    const intervalId = setInterval(validateToken, 10000)
-
-    // Also validate on user interaction to catch logout faster
-    const handleUserActivity = () => {
+    const throttledValidate = () => {
+      const now = Date.now()
+      // Prevent burst validation while still checking on focus/visibility changes.
+      if (now - lastValidationAt < 30000) return
+      lastValidationAt = now
       validateToken()
     }
 
-    window.addEventListener('click', handleUserActivity)
-    window.addEventListener('keydown', handleUserActivity)
+    // Validate token every 60 seconds instead of every 10 seconds.
+    const intervalId = setInterval(validateToken, 60000)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        throttledValidate()
+      }
+    }
+
+    const handleWindowFocus = () => {
+      throttledValidate()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleWindowFocus)
 
     return () => {
       clearInterval(intervalId)
-      window.removeEventListener('click', handleUserActivity)
-      window.removeEventListener('keydown', handleUserActivity)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleWindowFocus)
     }
   }, [user?.id, handleLogout])
 

@@ -22,16 +22,18 @@ export default function Login(){
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-md p-6 md:p-8">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6 text-center text-gray-800">Login</h2>
+    <div className="h-full flex flex-col items-center justify-center px-3 py-4 md:px-6 md:py-8 overflow-auto">
+      <div className="w-full max-w-md section-card p-6 md:p-8">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-[#113730]">Welcome Back</h2>
+            <p className="mt-2 text-sm text-[#5b7a72]">Sign in to continue your secure file exchange</p>
+          </div>
           
           <form className="space-y-4" onSubmit={submit}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-medium text-[#40635b] mb-2">Email</label>
               <input 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className="ui-input" 
                 placeholder="Enter your email" 
                 value={email} 
                 onChange={e=>setEmail(e.target.value)} 
@@ -39,9 +41,9 @@ export default function Login(){
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label className="block text-sm font-medium text-[#40635b] mb-2">Password</label>
               <input 
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                className="ui-input" 
                 placeholder="Enter your password" 
                 type="password" 
                 value={password} 
@@ -49,8 +51,8 @@ export default function Login(){
               />
             </div>
 
-            <button 
-              className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50" 
+            <button
+              className="ui-btn ui-btn-primary w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               type="submit"
               disabled={!email || !password}
             >
@@ -59,18 +61,17 @@ export default function Login(){
           </form>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+            <div className="mt-4 p-3 bg-[#ffeced] text-[#a03442] rounded-xl text-sm border border-[#f2c8ce]">
               {error}
             </div>
           )}
 
-          <p className="mt-6 text-center text-gray-600 text-sm">
+          <p className="mt-6 text-center text-[#5b7a72] text-sm">
             Don't have an account?{' '}
-            <Link to="/register" className="text-blue-600 hover:text-blue-700 font-semibold">
+            <Link to="/register" className="text-[#0b8b79] hover:text-[#0a7365] font-semibold">
               Register here
             </Link>
           </p>
-        </div>
       </div>
     </div>
   )

@@ -90,18 +90,21 @@ export default function UserFiles(){
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-4">{otherUser ? `${otherUser.name} (${otherUser.email})` : 'User files'}</h2>
-
-      <div className="mb-4">
-        <form className="form" onSubmit={submit}>
-          <input type="file" onChange={e=>setFileInput(e.target.files[0])} />
-          <button className="btn ml-2" type="submit">Send to {otherUser ? otherUser.name : 'user'}</button>
-        </form>
-        {msg && <div className="mt-2 text-sm">{msg}</div>}
+    <div className="h-full flex flex-col min-h-0 gap-3">
+      <div className="section-card p-4 md:p-5">
+        <h2 className="text-xl font-semibold text-[#123a33]">{otherUser ? `${otherUser.name} (${otherUser.email})` : 'User files'}</h2>
+        <p className="text-sm text-[#5b7a72] mt-1">Encrypted conversation file history</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="section-card p-4">
+        <form className="flex flex-col md:flex-row gap-3 md:items-center" onSubmit={submit}>
+          <input className="ui-input" type="file" onChange={e=>setFileInput(e.target.files[0])} />
+          <button className="ui-btn ui-btn-primary md:w-auto" type="submit">Send to {otherUser ? otherUser.name : 'user'}</button>
+        </form>
+        {msg && <div className="mt-2 text-sm text-[#315e56]">{msg}</div>}
+      </div>
+
+      <div className="space-y-3 overflow-auto pr-1 custom-scrollbar">
         {files.map(f => (
           <FileCard
             key={f._id}
@@ -120,7 +123,7 @@ export default function UserFiles(){
             downloading={downloading === f._id}
           />
         ))}
-        {files.length === 0 && <div>No files exchanged yet.</div>}
+        {files.length === 0 && <div className="section-card p-6 text-center text-[#5b7a72]">No files exchanged yet.</div>}
       </div>
     </div>
   )

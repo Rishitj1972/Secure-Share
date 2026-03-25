@@ -56,6 +56,7 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
   const [isAddingMembers, setIsAddingMembers] = useState(false)
   const [removingMemberId, setRemovingMemberId] = useState(null)
   const [showEditGroup, setShowEditGroup] = useState(false)
+  const [showGroupInfo, setShowGroupInfo] = useState(false)
   const [editingGroupName, setEditingGroupName] = useState('')
   const [editingAdminId, setEditingAdminId] = useState('')
   const [groupPhotoFile, setGroupPhotoFile] = useState(null)
@@ -95,6 +96,17 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
       id: member.user._id,
       name: member.user.username || member.user.email,
       email: member.user.email
+    }))
+
+  const visibleGroupMembers = groupMembers
+    .filter((member) => member?.user?._id)
+    .map((member) => ({
+      id: member.user._id,
+      name: member.user.username || member.user.email,
+      email: member.user.email,
+      profilePhoto: member.user.profilePhoto || null,
+      status: member.status,
+      role: member.role
     }))
 
   const removableMembers = groupMembers
@@ -149,6 +161,7 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
   useEffect(() => {
     setShowAddMembers(false)
     setShowEditGroup(false)
+    setShowGroupInfo(false)
     setSelectedNewMemberIds([])
     setGroupPhotoFile(null)
     setGroupPhotoPreview('')
@@ -620,10 +633,15 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
   }
 
   return (
-    <div className="h-full p-3 md:p-4 flex flex-col">
-      <div className="border-b pb-3 mb-3">
+    <div className="h-full p-3 md:p-4 flex flex-col bg-[#fafffd]">
+      <div className="border-b border-[#d8e7e1] pb-3 mb-3">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 md:gap-0">
-          <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={`flex items-center gap-3 min-w-0 ${isGroupMode ? 'cursor-pointer' : ''}`}
+            onClick={() => {
+              if (isGroupMode) setShowGroupInfo(true)
+            }}
+          >
             {isGroupMode ? (
               groupObj?.groupPhoto ? (
                 <img
@@ -652,8 +670,8 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
               <div className="w-10 h-10 rounded-full bg-gray-100" />
             )}
             <div className="min-w-0">
-              <div className="font-semibold text-base md:text-base truncate">{isGroupMode ? (groupObj?.name || 'Select a group') : (userObj ? `${userObj.name || userObj.username}` : 'Select a user')}</div>
-              <div className="flex items-center gap-2 text-[11px] md:text-xs text-gray-500 flex-wrap">
+              <div className="font-semibold text-base md:text-base truncate text-[#123a33]">{isGroupMode ? (groupObj?.name || 'Select a group') : (userObj ? `${userObj.name || userObj.username}` : 'Select a user')}</div>
+              <div className="flex items-center gap-2 text-[11px] md:text-xs text-[#5b7a72] flex-wrap">
                 <span>{isGroupMode ? 'Share to accepted group members' : 'Share files securely'}</span>
                 {isGroupMode && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
@@ -661,8 +679,8 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
                   </span>
                 )}
                 {!isGroupMode && userObj && (
-                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${userObj.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${userObj.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${userObj.isActive ? 'bg-[#e5f8ef] text-[#1d855a]' : 'bg-[#edf4f1] text-[#58756d]'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${userObj.isActive ? 'bg-[#1f9d63]' : 'bg-[#9bb2a9]'}`} />
                     {userObj.isActive ? 'Active' : 'Inactive'}
                   </span>
                 )}
@@ -670,7 +688,21 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="text-[11px] md:text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-mono whitespace-nowrap">v5.0.0 🔐 E2EE</div>
+            <div className="text-[11px] md:text-xs bg-[#e6f6f2] text-[#0c6f63] px-2 py-1 rounded-lg font-mono whitespace-nowrap">v5.0.0 E2EE</div>
+            {isGroupMode && groupObj && (
+              <button
+                onClick={() => setShowGroupInfo(true)}
+                title="Group Info"
+                aria-label="Group Info"
+                className="w-9 h-9 inline-flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-medium transition-colors"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+              </button>
+            )}
             {isGroupMode && groupObj && isGroupOwner && (
               <>
                 <button
@@ -926,8 +958,8 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
         )}
       </div>
 
-      <div ref={listRef} className={`flex-1 overflow-auto space-y-2 md:space-y-4 px-1 md:px-2 ${isEditingGroupSettings ? 'mb-0' : 'mb-8'}`}>
-        {loading && <div className="text-sm text-gray-500">Loading files...</div>}
+      <div ref={listRef} className={`flex-1 overflow-auto custom-scrollbar space-y-2 md:space-y-4 px-1 md:px-2 ${isEditingGroupSettings ? 'mb-0' : 'mb-8'}`}>
+        {loading && <div className="text-sm text-[#5b7a72]">Loading files...</div>}
         
         {!loading && files.length > 0 && (
           <div className="space-y-2">
@@ -970,58 +1002,58 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
           </div>
         )}
         
-        {files.length === 0 && !loading && <div className="text-sm text-gray-500">No files shared yet.</div>}
+        {files.length === 0 && !loading && <div className="text-sm text-[#5b7a72]">No files shared yet.</div>}
       </div>
 
       {!isEditingGroupSettings && (
-      <div className="mt-0 border-t pt-4 sticky bottom-0 bg-white z-10 shadow-md">
+      <div className="mt-0 border-t border-[#d8e7e1] pt-4 sticky bottom-0 bg-white z-10 shadow-sm">
         <form className="flex flex-col md:flex-row md:items-center gap-2 py-3" onSubmit={submit}>
-          <label className="inline-flex items-center gap-2 px-3 py-2 bg-white border rounded cursor-pointer hover:bg-gray-50 md:flex-shrink-0 text-sm md:text-base">
+          <label className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-[#bfd4cb] rounded-xl cursor-pointer hover:bg-[#f4faf7] md:flex-shrink-0 text-sm md:text-base">
             <input type="file" className="hidden" onChange={e=>setFileInput(e.target.files[0])} disabled={isUploading || isEncrypting} />
-            <span className="text-sm md:text-base">📎 Attach</span>
+            <span className="text-sm md:text-base text-[#315e56]">Attach</span>
           </label>
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-center gap-2">
-              <div className="text-[11px] md:text-sm flex-1 truncate">{fileInput ? fileInput.name : 'No file selected'}</div>
-              {uploadProgress > 0 && <div className="text-[11px] md:text-sm font-medium text-blue-600 flex-shrink-0">{uploadProgress}%</div>}
+              <div className="text-[11px] md:text-sm flex-1 truncate text-[#315e56]">{fileInput ? fileInput.name : 'No file selected'}</div>
+              {uploadProgress > 0 && <div className="text-[11px] md:text-sm font-medium text-[#0c6f63] flex-shrink-0">{uploadProgress}%</div>}
             </div>
             {uploadProgress > 0 && (
               <div className="w-full bg-gray-200 h-2.5 rounded-full mt-1.5 overflow-hidden">
                 <div 
                   style={{width: `${uploadProgress}%`}} 
                   className={`h-2.5 rounded-full transition-all duration-300 ${
-                    uploadProgress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                    uploadProgress === 100 ? 'bg-[#1f9d63]' : 'bg-[#0e9f8b]'
                   }`}
                 />
               </div>
             )}
             {uploadProgress > 0 && (
-              <div className="flex justify-between text-[11px] md:text-xs text-gray-600 mt-1">
-                <span>⚡ {uploadSpeed > 0 ? `${(uploadSpeed / (1024 * 1024)).toFixed(1)} MB/s` : 'Starting...'}</span>
-                <span>⏱ {elapsedTime}s</span>
+              <div className="flex justify-between text-[11px] md:text-xs text-[#5b7a72] mt-1">
+                <span>{uploadSpeed > 0 ? `${(uploadSpeed / (1024 * 1024)).toFixed(1)} MB/s` : 'Starting...'}</span>
+                <span>{elapsedTime}s</span>
               </div>
             )}
             {uploadProgress === 100 && isUploading && (
-              <div className="text-[11px] md:text-xs text-gray-500 mt-1">Finalizing upload...</div>
+              <div className="text-[11px] md:text-xs text-[#5b7a72] mt-1">Finalizing upload...</div>
             )}
           </div>
           <div className="flex gap-2 w-full md:w-auto">
             <button 
               className={`px-3 md:px-4 py-2 rounded font-medium transition-colors flex-1 md:flex-initial text-sm md:text-base ${
                 isUploading || isEncrypting
-                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  ? 'bg-[#dce8e3] text-[#6f8e85] cursor-not-allowed' 
+                  : 'bg-[#0e9f8b] text-white hover:bg-[#0a7e6e]'
               }`}
               type="submit" 
               disabled={isUploading || isEncrypting}
             >
-              {isEncrypting ? '🔐 Encrypting...' : isUploading ? `📤 ${uploadProgress}%` : '🔒 Send'}
+              {isEncrypting ? 'Encrypting...' : isUploading ? `Uploading ${uploadProgress}%` : 'Send'}
             </button>
             {isUploading && currentUploadId && (
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-3 md:px-4 py-2 rounded font-medium text-sm bg-red-500 text-white hover:bg-red-600 transition-colors"
+                className="px-3 md:px-4 py-2 rounded font-medium text-sm bg-[#dc4a5a] text-white hover:bg-[#c33948] transition-colors"
               >
                 Cancel
               </button>
@@ -1031,13 +1063,93 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
         {msg && (
           <div className={`mt-2 text-sm px-2 py-1 rounded ${
             msg.includes('failed') || msg.includes('error') 
-              ? 'text-red-600 bg-red-50' 
-              : 'text-green-600 bg-green-50'
+              ? 'text-[#a03442] bg-[#ffeced]' 
+              : 'text-[#196e4a] bg-[#e5f8ef]'
           }`}>
             {msg}
           </div>
         )}
       </div>
+      )}
+
+      {isGroupMode && groupObj && showGroupInfo && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end md:items-center justify-center p-0 md:p-4">
+          <div className="w-full md:max-w-sm h-[74vh] md:h-[70vh] bg-white rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+              <div className="text-sm font-semibold text-slate-800">Group Info</div>
+              <button
+                onClick={() => setShowGroupInfo(false)}
+                className="px-2 py-1 text-xs bg-slate-100 hover:bg-slate-200 rounded"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="p-4 border-b border-slate-100 flex flex-col items-center gap-2">
+              {groupObj?.groupPhoto ? (
+                <img
+                  src={getPhotoUrl(groupObj.groupPhoto, groupObj.updatedAt)}
+                  alt={groupObj?.name || 'Group'}
+                  className="w-20 h-20 rounded-full object-cover border"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-indigo-100 flex items-center justify-center text-xl font-semibold text-indigo-700">
+                  {getInitials(groupObj?.name || 'Group')}
+                </div>
+              )}
+              <div className="text-base font-semibold text-slate-900">{groupObj?.name || 'Group'}</div>
+              <div className="text-xs text-slate-500">{visibleGroupMembers.length} participants</div>
+            </div>
+
+            <div className="flex-1 overflow-hidden p-4">
+              {loadingGroupMembers ? (
+                <div className="text-xs text-gray-500">Loading members...</div>
+              ) : visibleGroupMembers.length === 0 ? (
+                <div className="text-xs text-gray-500">No members found.</div>
+              ) : (
+                <div className="max-h-full overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                  {visibleGroupMembers.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between gap-2 p-2 rounded-lg border border-slate-100">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {member.profilePhoto ? (
+                          <img
+                            src={getPhotoUrl(member.profilePhoto)}
+                            alt={member.name}
+                            className="w-9 h-9 rounded-full object-cover border"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-xs font-semibold text-slate-600">
+                            {getInitials(member.name)}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium truncate text-slate-800">{member.name}</div>
+                          {member.email && <div className="text-[11px] text-slate-500 truncate">{member.email}</div>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {member.role === 'owner' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">Admin</span>
+                        )}
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded ${
+                            member.status === 'accepted'
+                              ? 'bg-green-100 text-green-700'
+                              : member.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {member.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
