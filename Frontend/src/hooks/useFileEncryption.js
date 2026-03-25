@@ -23,6 +23,7 @@ function arrayBufferToBase64(buffer) {
  */
 export function useFileEncryption() {
   const encryptionCache = useRef({}) // Store encryption data temporarily
+  const FILE_SIZE_THRESHOLD = 100 * 1024 * 1024 // 100MB threshold
 
   /**
    * Encrypt a file before upload
@@ -42,8 +43,8 @@ export function useFileEncryption() {
    */
   const encryptFileForUpload = useCallback(async (file, receiverPublicKey) => {
     try {
-      const FILE_SIZE_THRESHOLD = 100 * 1024 * 1024 // 100MB threshold
       
+      // const FILE_SISE_THRE = 100 * 1024 * 1024;
       // Step 1: Generate random AES key
       const aesKey = await generateAESKey()
 
@@ -104,6 +105,59 @@ export function useFileEncryption() {
       throw error
     }
   }, [])
+  // new
+
+  /**
+   * Encrypt once for the group and wrap the same AES key for every recipient.
+   * @param {File} file - Original file
+   * @param {Record<string, string>} recipientPublicKeys - userId -> RSA public key
+   */
+  const encryptFileForGroupUpload = useCallback(async (file, recipientPublicKeys = {}) => {
+    try {
+      const recipientEntries = Object.entries(recipientPublicKeys).filter(([, key]) => !!key)
+      if (recipientEntries.length === 0) {
+        throw new Error('No valid recipient encryption keys found for group members')
+      }
+
+      // Step 1: Generate one AES key for this shared group message
+      const aesKey = await generateAESKey()
+
+      // Step 2: Calculate file hash once
+      const fileHash = await calculateFileHashStreaming(file)
+
+      let iv = null
+      let encryptedFile = null
+
+      // Step 3: Encrypt file once
+      if (file.size <= FILE_SIZE_THRESHOLD) {
+        const fileBuffer = await file.arrayBuffer()
+        const result = await encryptFile(fileBuffer, aesKey)
+        iv = result.iv
+        encryptedFile = new File([result.encryptedData], file.name, { type: file.type })
+      } else {
+        encryptedFile = file
+        const ivBytes = window.crypto.getRandomValues(new Uint8Array(12))
+        iv = arrayBufferToBase64(ivBytes.buffer)
+      }
+
+      // Step 4: Wrap the same AES key for each recipient
+      const encryptedAesKeys = {}
+      for (const [recipientId, publicKey] of recipientEntries) {
+        encryptedAesKeys[recipientId] = await encryptAESKey(aesKey, publicKey)
+      }
+
+      return {
+        encryptedFile,
+        encryptedAesKeys,
+        iv,
+        fileHash
+      }
+    } catch (error) {
+      console.error('Group file encryption failed:', error)
+      throw error
+    }
+  }, [])
+  // new end
 
   /**
    * Calculate file hash by streaming chunks (prevents memory overload)
@@ -182,6 +236,7 @@ export function useFileEncryption() {
 
   return {
     encryptFileForUpload,
+    encryptFileForGroupUpload,
     getEncryptionData,
     clearEncryptionData,
     getReceiverPublicKey

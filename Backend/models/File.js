@@ -12,7 +12,8 @@ const FileSchema = new Schema(
     receiver: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      required: false,
+      default: null,
       index: true,
     },
     group: {
@@ -48,6 +49,11 @@ const FileSchema = new Schema(
     },
     encryptedAesKey: {
       type: String,
+      default: null
+    },
+    encryptedAesKeys: {
+      type: Map,
+      of: String,
       default: null
     },
     iv: {

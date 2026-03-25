@@ -67,7 +67,7 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
   const mounted = useRef(true)
   const listRef = useRef(null)
   const { uploadFile, cancelUpload } = useChunkedUpload()
-  const { encryptFileForUpload, getReceiverPublicKey } = useFileEncryption()
+  const { encryptFileForUpload, encryptFileForGroupUpload, getReceiverPublicKey } = useFileEncryption()
   const { downloadAndDecrypt } = useFileDecryption()
   const { user } = useAuth()
   const isGroupMode = !!groupObj
@@ -371,7 +371,6 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
       if (isGroupMode) {
         setMsg('Loading group members...')
         const membersRes = await api.get(`/groups/${groupObj._id}/members`)
-        const groupShareId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
         const acceptedMembers = (membersRes?.data?.members || [])
           .filter((member) => member.status === 'accepted')
           .map((member) => member.user)
@@ -381,55 +380,52 @@ export default function ConversationPanel({ userId, userObj, groupObj, friends =
           throw new Error('No accepted members available in this group')
         }
 
-        let sentCount = 0
-        for (let i = 0; i < acceptedMembers.length; i += 1) {
-          const receiver = acceptedMembers[i]
-
-          setMsg(`Encrypting for ${receiver.username || receiver.email} (${i + 1}/${acceptedMembers.length})...`)
-          setIsEncrypting(true)
-          const receiverPublicKey = await getReceiverPublicKey(receiver._id)
-          if (!receiverPublicKey) {
-            setIsEncrypting(false)
-            continue
+        setMsg('Fetching encryption keys...')
+        const recipientPublicKeys = {}
+        for (const receiver of acceptedMembers) {
+          const receiverPublicKey = receiver?.rsaPublicKey || await getReceiverPublicKey(receiver._id)
+          if (receiverPublicKey) {
+            recipientPublicKeys[receiver._id] = receiverPublicKey
           }
-
-          const { encryptedFile, encryptedAesKey, iv, fileHash } = await encryptFileForUpload(fileInput, receiverPublicKey)
-          setIsEncrypting(false)
-
-          setMsg(`Uploading to ${receiver.username || receiver.email} (${i + 1}/${acceptedMembers.length})...`)
-
-          await uploadFile(
-            encryptedFile,
-            receiver._id,
-            (progress) => {
-              const normalizedProgress = Math.max(0, Math.min(100, Math.round(progress)))
-              const combined = Math.round(((i + normalizedProgress / 100) / acceptedMembers.length) * 100)
-              setUploadProgress((prev) => Math.max(prev, combined))
-
-              const now = Date.now()
-              const elapsed = (now - startTime) / 1000
-              setElapsedTime(Math.round(elapsed))
-              if (elapsed > 0.5 && (now - lastUpdateTime) >= 500) {
-                const aggregateBytes = ((i + normalizedProgress / 100) / acceptedMembers.length) * (fileInput.size * acceptedMembers.length)
-                setUploadSpeed(aggregateBytes / elapsed)
-                lastUpdateTime = now
-              }
-            },
-            (uploadId) => setCurrentUploadId(uploadId),
-            { encryptedAesKey, iv, fileHash },
-            groupObj._id,
-            groupShareId
-          )
-
-          sentCount += 1
         }
 
-        if (sentCount === 0) {
-          throw new Error('Could not send file to any group members')
+        const recipientCount = Object.keys(recipientPublicKeys).length
+        if (recipientCount === 0) {
+          throw new Error('Could not find valid encryption keys for group members')
         }
 
-        setMsg(`File shared with ${sentCount} group member${sentCount > 1 ? 's' : ''}`)
-        showNotification && showNotification(`Shared with ${sentCount} members`, 'success')
+        setIsEncrypting(true)
+        setMsg(`Encrypting once for ${recipientCount} group member${recipientCount > 1 ? 's' : ''}...`)
+        const { encryptedFile, encryptedAesKeys, iv, fileHash } = await encryptFileForGroupUpload(
+          fileInput,
+          recipientPublicKeys
+        )
+        setIsEncrypting(false)
+
+        setMsg('Uploading shared file once to group...')
+        await uploadFile(
+          encryptedFile,
+          null,
+          (progress) => {
+            const normalizedProgress = Math.max(0, Math.min(100, Math.round(progress)))
+            setUploadProgress((prev) => Math.max(prev, normalizedProgress))
+
+            const now = Date.now()
+            const elapsed = (now - startTime) / 1000
+            setElapsedTime(Math.round(elapsed))
+            if (elapsed > 0.5 && (now - lastUpdateTime) >= 500) {
+              const uploadedBytes = (normalizedProgress / 100) * encryptedFile.size
+              setUploadSpeed(uploadedBytes / elapsed)
+              lastUpdateTime = now
+            }
+          },
+          (uploadId) => setCurrentUploadId(uploadId),
+          { encryptedAesKeys, iv, fileHash },
+          groupObj._id
+        )
+
+        setMsg(`File shared with ${recipientCount} group member${recipientCount > 1 ? 's' : ''}`)
+        showNotification && showNotification(`Shared with ${recipientCount} members`, 'success')
         setFileInput(null)
         const groupFilesRes = await api.get(`/groups/${groupObj._id}/files`)
         setFiles(sortConversationFiles(groupFilesRes.data))

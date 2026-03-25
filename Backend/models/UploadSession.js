@@ -18,7 +18,8 @@ const UploadSessionSchema = new Schema(
     receiver: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: true
+      required: false,
+      default: null
     },
     group: {
       type: Schema.Types.ObjectId,
@@ -56,6 +57,11 @@ const UploadSessionSchema = new Schema(
     },
     encryptedAesKey: {
       type: String,
+      default: null
+    },
+    encryptedAesKeys: {
+      type: Map,
+      of: String,
       default: null
     },
     iv: {

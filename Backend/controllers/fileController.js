@@ -4,6 +4,30 @@ const fs = require('fs');
 const crypto = require('crypto');
 const File = require('../models/File');
 const User = require('../models/userModels');
+const Group = require('../models/Group');
+
+const toObjectIdString = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (value._id) return value._id.toString();
+  return value.toString();
+};
+
+const canAccessSharedGroupFile = async (file, userId) => {
+  if (!file.group) return false;
+
+  const group = await Group.findById(file.group)
+    .select('owner members')
+    .lean();
+
+  if (!group) return false;
+  if (toObjectIdString(group.owner) === toObjectIdString(userId)) return true;
+
+  return group.members.some(
+    (member) =>
+      toObjectIdString(member.user) === toObjectIdString(userId) && member.status === 'accepted'
+  );
+};
 
 // @desc Send a file from sender to receiver
 // @route POST /api/files/send
@@ -108,7 +132,7 @@ const downloadFile = asyncHandler(async (req, res) => {
   // Quick auth & file check (minimal DB fetch)
   const file = await File.findById(fileId)
     .lean()
-    .select('receiver sender filePath mimeType originalFileName fileSize');
+    .select('receiver sender group filePath mimeType originalFileName fileSize');
     
   if (!file) {
     res.status(404);
@@ -116,7 +140,10 @@ const downloadFile = asyncHandler(async (req, res) => {
   }
 
   // Verify access immediately
-  if (file.receiver.toString() !== userId.toString() && file.sender.toString() !== userId.toString()) {
+  const isSender = toObjectIdString(file.sender) === toObjectIdString(userId);
+  const isReceiver = file.receiver && toObjectIdString(file.receiver) === toObjectIdString(userId);
+  const hasGroupAccess = await canAccessSharedGroupFile(file, userId);
+  if (!isSender && !isReceiver && !hasGroupAccess) {
     res.status(403);
     throw new Error('Not authorized to download this file');
   }
@@ -204,7 +231,7 @@ const downloadFile = asyncHandler(async (req, res) => {
   }
 
   // Update download tracking asynchronously (non-blocking)
-  if (file.receiver.toString() === userId.toString()) {
+  if (isReceiver) {
     setImmediate(() => {
       File.findByIdAndUpdate(fileId, { 
         isDownloaded: true, 
@@ -230,7 +257,9 @@ const deleteFile = asyncHandler(async (req, res) => {
   }
 
   // Only sender or receiver can delete
-  if (file.receiver.toString() !== userId.toString() && file.sender.toString() !== userId.toString()) {
+  const isSender = toObjectIdString(file.sender) === toObjectIdString(userId);
+  const isReceiver = file.receiver && toObjectIdString(file.receiver) === toObjectIdString(userId);
+  if (!isSender && !isReceiver) {
     res.status(403);
     throw new Error('Not authorized to delete this file');
   }
@@ -265,14 +294,17 @@ const getFileMetadata = asyncHandler(async (req, res) => {
   // Ultra-fast query: only get required fields
   const file = await File.findById(fileId)
     .lean()
-    .select('receiver sender originalFileName fileSize mimeType createdAt');
+    .select('receiver sender group originalFileName fileSize mimeType createdAt');
 
   if (!file) {
     return res.status(404).json({ message: 'File not found' });
   }
 
   // Verify access
-  if (file.receiver.toString() !== userId.toString() && file.sender.toString() !== userId.toString()) {
+  const isSender = toObjectIdString(file.sender) === toObjectIdString(userId);
+  const isReceiver = file.receiver && toObjectIdString(file.receiver) === toObjectIdString(userId);
+  const hasGroupAccess = await canAccessSharedGroupFile(file, userId);
+  if (!isSender && !isReceiver && !hasGroupAccess) {
     return res.status(403).json({ message: 'Not authorized' });
   }
 
@@ -300,7 +332,10 @@ const verifyFile = asyncHandler(async (req, res) => {
   }
 
   // Allow sender or receiver to verify
-  if (file.receiver.toString() !== userId.toString() && file.sender.toString() !== userId.toString()) {
+  const isSender = toObjectIdString(file.sender) === toObjectIdString(userId);
+  const isReceiver = file.receiver && toObjectIdString(file.receiver) === toObjectIdString(userId);
+  const hasGroupAccess = await canAccessSharedGroupFile(file, userId);
+  if (!isSender && !isReceiver && !hasGroupAccess) {
     res.status(403);
     throw new Error('Not authorized to verify this file');
   }

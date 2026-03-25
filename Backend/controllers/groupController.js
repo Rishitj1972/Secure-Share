@@ -452,21 +452,13 @@ const getGroupFiles = asyncHandler(async (req, res) => {
     throw new Error('Not authorized to view this group');
   }
 
-  const acceptedUserIds = group.members
-    .filter((member) => member.status === 'accepted')
-    .map((member) => member.user);
-
   const files = await File.find({
-    group: groupId,
-    $or: [
-      { sender: { $in: acceptedUserIds } },
-      { receiver: { $in: acceptedUserIds } }
-    ]
+    group: groupId
   })
     .sort({ createdAt: -1 })
     .populate('sender', 'username email profilePhoto')
     .populate('receiver', 'username email profilePhoto')
-    .select('_id originalFileName fileSize mimeType sender receiver createdAt isDownloaded encryptedAesKey iv fileHash isEncrypted group groupShareId')
+    .select('_id originalFileName fileSize mimeType sender receiver createdAt isDownloaded encryptedAesKey encryptedAesKeys iv fileHash isEncrypted group groupShareId')
     .lean();
 
   const grouped = new Map();
@@ -484,17 +476,21 @@ const getGroupFiles = asyncHandler(async (req, res) => {
     const forCurrentUser = records.find((record) => toObjectIdString(record.receiver) === toObjectIdString(userId));
     const fromCurrentUser = records.find((record) => toObjectIdString(record.sender) === toObjectIdString(userId));
     const target = forCurrentUser || fromCurrentUser || records[0];
+    const encryptedAesKeys = target?.encryptedAesKeys || {};
+    const keyForCurrentUser = target?.encryptedAesKey || encryptedAesKeys[toObjectIdString(userId)] || null;
+    const keyCount = encryptedAesKeys ? Object.keys(encryptedAesKeys).length : 0;
 
     const base = records[0];
     feed.push({
       ...base,
       _id: target._id,
       receiver: target.receiver,
-      encryptedAesKey: target.encryptedAesKey,
+      encryptedAesKey: keyForCurrentUser,
       iv: target.iv,
       fileHash: target.fileHash,
       isDownloaded: target.isDownloaded,
-      sharedToCount: records.length
+      encryptedAesKeys: undefined,
+      sharedToCount: keyCount > 0 ? keyCount : records.length
     });
   }
 

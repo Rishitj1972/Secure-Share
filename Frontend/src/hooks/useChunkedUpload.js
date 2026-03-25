@@ -19,12 +19,13 @@ export function useChunkedUpload() {
       const res = await api.post('/files/chunked/init', {
         filename: file.name,
         fileSize: file.size,
-        receiver: receiverId,
+        receiver: receiverId || null,
         groupId,
         groupShareId,
         mimeType: file.type,
         preferredChunkSize,
         encryptedAesKey: encryptionData?.encryptedAesKey,
+        encryptedAesKeys: encryptionData?.encryptedAesKeys,
         iv: encryptionData?.iv,
         fileHash: encryptionData?.fileHash,
         isEncrypted: !!encryptionData

@@ -9,6 +9,19 @@ const File = require('../models/File');
 const User = require('../models/userModels');
 const Group = require('../models/Group');
 
+const toObjectIdString = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (value._id) return value._id.toString();
+  return value.toString();
+};
+
+const isAcceptedGroupMember = (group, userId) =>
+  group.members.some(
+    (member) =>
+      toObjectIdString(member.user) === toObjectIdString(userId) && member.status === 'accepted'
+  );
+
 const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
 const CHUNKS_DIR = path.join(__dirname, '..', 'uploads', 'chunks');
 
@@ -21,11 +34,33 @@ if (!fs.existsSync(CHUNKS_DIR)) fs.mkdirSync(CHUNKS_DIR, { recursive: true });
 // @access Protected
 const initChunkedUpload = asyncHandler(async (req, res) => {
   const senderId = req.user.id;
-  const { filename, fileSize, receiver, mimeType, preferredChunkSize, encryptedAesKey, iv, fileHash, isEncrypted, groupId, groupShareId } = req.body;
+  const {
+    filename,
+    fileSize,
+    receiver,
+    mimeType,
+    preferredChunkSize,
+    encryptedAesKey,
+    encryptedAesKeys,
+    iv,
+    fileHash,
+    isEncrypted,
+    groupId,
+    groupShareId
+  } = req.body;
 
-  if (!filename || !fileSize || !receiver || !mimeType) {
+  const normalizedReceiver = typeof receiver === 'string' && receiver.trim() ? receiver.trim() : null;
+  const hasGroupTarget = !!groupId;
+  const hasDirectTarget = !!normalizedReceiver;
+
+  if (!filename || !fileSize || !mimeType) {
     res.status(400);
-    throw new Error('Missing required fields: filename, fileSize, receiver, mimeType');
+    throw new Error('Missing required fields: filename, fileSize, mimeType');
+  }
+
+  if (!hasDirectTarget && !hasGroupTarget) {
+    res.status(400);
+    throw new Error('Either receiver or groupId is required');
   }
 
   if (fileSize > 4 * 1024 * 1024 * 1024) { // 4GB limit
@@ -33,16 +68,18 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
     throw new Error('File size exceeds maximum limit of 4GB');
   }
 
-  if (receiver === senderId) {
+  if (normalizedReceiver && normalizedReceiver === senderId) {
     res.status(400);
     throw new Error('Cannot send file to yourself');
   }
 
-  // Verify receiver exists
-  const receiverUser = await User.findById(receiver).select('-password');
-  if (!receiverUser) {
-    res.status(404);
-    throw new Error('Receiver user not found');
+  // Verify receiver exists for direct or member-specific uploads
+  if (normalizedReceiver) {
+    const receiverUser = await User.findById(normalizedReceiver).select('-password');
+    if (!receiverUser) {
+      res.status(404);
+      throw new Error('Receiver user not found');
+    }
   }
 
   if (groupId) {
@@ -52,12 +89,10 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
       throw new Error('Group not found');
     }
 
-    const senderAccepted = group.members.some(
-      (member) => member.user.toString() === senderId.toString() && member.status === 'accepted'
-    );
-    const receiverAccepted = group.members.some(
-      (member) => member.user.toString() === receiver.toString() && member.status === 'accepted'
-    );
+    const senderAccepted = isAcceptedGroupMember(group, senderId);
+    const receiverAccepted = normalizedReceiver
+      ? isAcceptedGroupMember(group, normalizedReceiver)
+      : true;
 
     if (!senderAccepted || !receiverAccepted) {
       res.status(403);
@@ -66,9 +101,11 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
   }
 
   // If encrypted, verify encryption data
-  if (isEncrypted && (!encryptedAesKey || !iv || !fileHash)) {
+  const hasSingleEncryptedKey = !!encryptedAesKey;
+  const hasKeyMap = !!encryptedAesKeys && Object.keys(encryptedAesKeys).length > 0;
+  if (isEncrypted && (!iv || !fileHash || (!hasSingleEncryptedKey && !hasKeyMap))) {
     res.status(400);
-    throw new Error('Encrypted upload missing encryption metadata');
+    throw new Error('Encrypted upload missing encryption metadata (AES key data, iv, or fileHash)');
   }
 
   // Dynamic chunk size based on file size, with optional client preference
@@ -96,7 +133,7 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
   const uploadSession = await UploadSession.create({
     uploadId,
     sender: senderId,
-    receiver,
+    receiver: normalizedReceiver,
     group: groupId || null,
     groupShareId: groupShareId || null,
     originalFileName: filename,
@@ -106,6 +143,7 @@ const initChunkedUpload = asyncHandler(async (req, res) => {
     mimeType,
     status: 'in-progress',
     encryptedAesKey: isEncrypted ? encryptedAesKey : null,
+    encryptedAesKeys: isEncrypted && hasKeyMap ? encryptedAesKeys : null,
     iv: isEncrypted ? iv : null,
     fileHash: isEncrypted ? fileHash : null,
     isEncrypted: !!isEncrypted
@@ -370,7 +408,7 @@ const completeChunkedUpload = asyncHandler(async (req, res) => {
     // Create File record
     const file = await File.create({
       sender: uploadSession.sender,
-      receiver: uploadSession.receiver,
+      receiver: uploadSession.receiver || null,
       group: uploadSession.group || null,
       groupShareId: uploadSession.groupShareId || null,
       originalFileName: uploadSession.originalFileName,
@@ -379,6 +417,7 @@ const completeChunkedUpload = asyncHandler(async (req, res) => {
       fileSize: uploadSession.fileSize,
       mimeType: uploadSession.mimeType,
       encryptedAesKey: uploadSession.encryptedAesKey,
+      encryptedAesKeys: uploadSession.encryptedAesKeys,
       iv: uploadSession.iv,
       fileHash: uploadSession.fileHash,
       isEncrypted: uploadSession.isEncrypted
